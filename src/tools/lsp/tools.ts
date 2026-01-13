@@ -35,11 +35,11 @@ import type {
 
 
 export const lsp_hover: ToolDefinition = tool({
-  description: "Get type info, docs, and signature for a symbol at position.",
+  description: "获取指定位置符号的类型信息、文档与签名。",
   args: {
     filePath: tool.schema.string(),
-    line: tool.schema.number().min(1).describe("1-based"),
-    character: tool.schema.number().min(0).describe("0-based"),
+    line: tool.schema.number().min(1).describe("从 1 开始"),
+    character: tool.schema.number().min(0).describe("从 0 开始"),
   },
   execute: async (args, context) => {
     try {
@@ -49,18 +49,18 @@ export const lsp_hover: ToolDefinition = tool({
       const output = formatHoverResult(result)
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_goto_definition: ToolDefinition = tool({
-  description: "Jump to symbol definition. Find WHERE something is defined.",
+  description: "跳转到符号定义位置，定位其定义处。",
   args: {
     filePath: tool.schema.string(),
-    line: tool.schema.number().min(1).describe("1-based"),
-    character: tool.schema.number().min(0).describe("0-based"),
+    line: tool.schema.number().min(1).describe("从 1 开始"),
+    character: tool.schema.number().min(0).describe("从 0 开始"),
   },
   execute: async (args, context) => {
     try {
@@ -73,32 +73,32 @@ export const lsp_goto_definition: ToolDefinition = tool({
       })
 
       if (!result) {
-        const output = "No definition found"
+        const output = "未找到定义"
         return output
       }
 
       const locations = Array.isArray(result) ? result : [result]
       if (locations.length === 0) {
-        const output = "No definition found"
+        const output = "未找到定义"
         return output
       }
 
       const output = locations.map(formatLocation).join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_find_references: ToolDefinition = tool({
-  description: "Find ALL usages/references of a symbol across the entire workspace.",
+  description: "在整个工作区查找符号的所有引用/使用。",
   args: {
     filePath: tool.schema.string(),
-    line: tool.schema.number().min(1).describe("1-based"),
-    character: tool.schema.number().min(0).describe("0-based"),
-    includeDeclaration: tool.schema.boolean().optional().describe("Include the declaration itself"),
+    line: tool.schema.number().min(1).describe("从 1 开始"),
+    character: tool.schema.number().min(0).describe("从 0 开始"),
+    includeDeclaration: tool.schema.boolean().optional().describe("包含定义本身"),
   },
   execute: async (args, context) => {
     try {
@@ -109,7 +109,7 @@ export const lsp_find_references: ToolDefinition = tool({
       })
 
       if (!result || result.length === 0) {
-        const output = "No references found"
+        const output = "未找到引用"
         return output
       }
 
@@ -118,19 +118,19 @@ export const lsp_find_references: ToolDefinition = tool({
       const limited = truncated ? result.slice(0, DEFAULT_MAX_REFERENCES) : result
       const lines = limited.map(formatLocation)
       if (truncated) {
-        lines.unshift(`Found ${total} references (showing first ${DEFAULT_MAX_REFERENCES}):`)
+        lines.unshift(`共找到 ${total} 个引用（显示前 ${DEFAULT_MAX_REFERENCES} 个）：`)
       }
       const output = lines.join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_document_symbols: ToolDefinition = tool({
-  description: "Get hierarchical outline of all symbols in a file.",
+  description: "获取文件内所有符号的层级结构。",
   args: {
     filePath: tool.schema.string(),
   },
@@ -141,7 +141,7 @@ export const lsp_document_symbols: ToolDefinition = tool({
       })
 
       if (!result || result.length === 0) {
-        const output = "No symbols found"
+        const output = "未找到符号"
         return output
       }
 
@@ -151,7 +151,7 @@ export const lsp_document_symbols: ToolDefinition = tool({
 
       const lines: string[] = []
       if (truncated) {
-        lines.push(`Found ${total} symbols (showing first ${DEFAULT_MAX_SYMBOLS}):`)
+        lines.push(`共找到 ${total} 个符号（显示前 ${DEFAULT_MAX_SYMBOLS} 个）：`)
       }
 
       if ("range" in limited[0]) {
@@ -161,18 +161,18 @@ export const lsp_document_symbols: ToolDefinition = tool({
       }
       return lines.join("\n")
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_workspace_symbols: ToolDefinition = tool({
-  description: "Search symbols by name across ENTIRE workspace.",
+  description: "按名称在整个工作区搜索符号。",
   args: {
     filePath: tool.schema.string(),
-    query: tool.schema.string().describe("Symbol name (fuzzy match)"),
-    limit: tool.schema.number().optional().describe("Max results"),
+    query: tool.schema.string().describe("符号名称（模糊匹配）"),
+    limit: tool.schema.number().optional().describe("最大结果数"),
   },
   execute: async (args, context) => {
     try {
@@ -181,7 +181,7 @@ export const lsp_workspace_symbols: ToolDefinition = tool({
       })
 
       if (!result || result.length === 0) {
-        const output = "No symbols found"
+        const output = "未找到符号"
         return output
       }
 
@@ -191,25 +191,25 @@ export const lsp_workspace_symbols: ToolDefinition = tool({
       const limited = result.slice(0, limit)
       const lines = limited.map(formatSymbolInfo)
       if (truncated) {
-        lines.unshift(`Found ${total} symbols (showing first ${limit}):`)
+        lines.unshift(`共找到 ${total} 个符号（显示前 ${limit} 个）：`)
       }
       const output = lines.join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_diagnostics: ToolDefinition = tool({
-  description: "Get errors, warnings, hints from language server BEFORE running build.",
+  description: "在构建前从语言服务器获取错误、警告和提示。",
   args: {
     filePath: tool.schema.string(),
     severity: tool.schema
       .enum(["error", "warning", "information", "hint", "all"])
       .optional()
-      .describe("Filter by severity level"),
+      .describe("按严重级别过滤"),
   },
   execute: async (args, context) => {
     try {
@@ -229,7 +229,7 @@ export const lsp_diagnostics: ToolDefinition = tool({
       diagnostics = filterDiagnosticsBySeverity(diagnostics, args.severity)
 
       if (diagnostics.length === 0) {
-        const output = "No diagnostics found"
+        const output = "未发现诊断信息"
         return output
       }
 
@@ -238,45 +238,45 @@ export const lsp_diagnostics: ToolDefinition = tool({
       const limited = truncated ? diagnostics.slice(0, DEFAULT_MAX_DIAGNOSTICS) : diagnostics
       const lines = limited.map(formatDiagnostic)
       if (truncated) {
-        lines.unshift(`Found ${total} diagnostics (showing first ${DEFAULT_MAX_DIAGNOSTICS}):`)
+        lines.unshift(`共找到 ${total} 条诊断信息（显示前 ${DEFAULT_MAX_DIAGNOSTICS} 条）：`)
       }
       const output = lines.join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_servers: ToolDefinition = tool({
-  description: "List available LSP servers and installation status.",
+  description: "列出可用的 LSP 服务器及安装状态。",
   args: {},
   execute: async (_args, context) => {
     try {
       const servers = getAllServers()
       const lines = servers.map((s) => {
         if (s.disabled) {
-          return `${s.id} [disabled] - ${s.extensions.join(", ")}`
+          return `${s.id} [已禁用] - ${s.extensions.join(", ")}`
         }
-        const status = s.installed ? "[installed]" : "[not installed]"
+        const status = s.installed ? "[已安装]" : "[未安装]"
         return `${s.id} ${status} - ${s.extensions.join(", ")}`
       })
       const output = lines.join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_prepare_rename: ToolDefinition = tool({
-  description: "Check if rename is valid. Use BEFORE lsp_rename.",
+  description: "检查重命名是否可行，应在 lsp_rename 之前使用。",
   args: {
     filePath: tool.schema.string(),
-    line: tool.schema.number().min(1).describe("1-based"),
-    character: tool.schema.number().min(0).describe("0-based"),
+    line: tool.schema.number().min(1).describe("从 1 开始"),
+    character: tool.schema.number().min(0).describe("从 0 开始"),
   },
   execute: async (args, context) => {
     try {
@@ -289,19 +289,19 @@ export const lsp_prepare_rename: ToolDefinition = tool({
       const output = formatPrepareRenameResult(result)
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_rename: ToolDefinition = tool({
-  description: "Rename symbol across entire workspace. APPLIES changes to all files.",
+  description: "在整个工作区重命名符号，会修改所有相关文件。",
   args: {
     filePath: tool.schema.string(),
-    line: tool.schema.number().min(1).describe("1-based"),
-    character: tool.schema.number().min(0).describe("0-based"),
-    newName: tool.schema.string().describe("New symbol name"),
+    line: tool.schema.number().min(1).describe("从 1 开始"),
+    character: tool.schema.number().min(0).describe("从 0 开始"),
+    newName: tool.schema.string().describe("新符号名称"),
   },
   execute: async (args, context) => {
     try {
@@ -312,20 +312,20 @@ export const lsp_rename: ToolDefinition = tool({
       const output = formatApplyResult(result)
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_code_actions: ToolDefinition = tool({
-  description: "Get available quick fixes, refactorings, and source actions (organize imports, fix all).",
+  description: "获取可用的快速修复、重构与源代码操作（整理导入、全部修复等）。",
   args: {
     filePath: tool.schema.string(),
-    startLine: tool.schema.number().min(1).describe("1-based"),
-    startCharacter: tool.schema.number().min(0).describe("0-based"),
-    endLine: tool.schema.number().min(1).describe("1-based"),
-    endCharacter: tool.schema.number().min(0).describe("0-based"),
+    startLine: tool.schema.number().min(1).describe("从 1 开始"),
+    startCharacter: tool.schema.number().min(0).describe("从 0 开始"),
+    endLine: tool.schema.number().min(1).describe("从 1 开始"),
+    endCharacter: tool.schema.number().min(0).describe("从 0 开始"),
     kind: tool.schema
       .enum([
         "quickfix",
@@ -338,7 +338,7 @@ export const lsp_code_actions: ToolDefinition = tool({
         "source.fixAll",
       ])
       .optional()
-      .describe("Filter by code action kind"),
+      .describe("按代码操作类型过滤"),
   },
   execute: async (args, context) => {
     try {
@@ -356,17 +356,17 @@ export const lsp_code_actions: ToolDefinition = tool({
       const output = formatCodeActions(result)
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
 })
 
 export const lsp_code_action_resolve: ToolDefinition = tool({
-  description: "Resolve and APPLY a code action from lsp_code_actions.",
+  description: "解析并执行 lsp_code_actions 返回的代码操作。",
   args: {
     filePath: tool.schema.string(),
-    codeAction: tool.schema.string().describe("Code action JSON from lsp_code_actions"),
+    codeAction: tool.schema.string().describe("来自 lsp_code_actions 的代码操作 JSON"),
   },
   execute: async (args, context) => {
     try {
@@ -376,29 +376,29 @@ export const lsp_code_action_resolve: ToolDefinition = tool({
       })
 
       if (!resolved) {
-        const output = "Failed to resolve code action"
+        const output = "解析代码操作失败"
         return output
       }
 
       const lines: string[] = []
-      lines.push(`Action: ${resolved.title}`)
-      if (resolved.kind) lines.push(`Kind: ${resolved.kind}`)
+      lines.push(`操作：${resolved.title}`)
+      if (resolved.kind) lines.push(`类型：${resolved.kind}`)
 
       if (resolved.edit) {
         const result = applyWorkspaceEdit(resolved.edit)
         lines.push(formatApplyResult(result))
       } else {
-        lines.push("No edit to apply")
+        lines.push("没有可应用的编辑")
       }
 
       if (resolved.command) {
-        lines.push(`Command: ${resolved.command.title} (${resolved.command.command}) - not executed`)
+        lines.push(`命令：${resolved.command.title} (${resolved.command.command}) - 未执行`)
       }
 
       const output = lines.join("\n")
       return output
     } catch (e) {
-      const output = `Error: ${e instanceof Error ? e.message : String(e)}`
+      const output = `错误：${e instanceof Error ? e.message : String(e)}`
       return output
     }
   },
