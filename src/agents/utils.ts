@@ -10,6 +10,7 @@ import { createMultimodalLookerAgent, MULTIMODAL_LOOKER_PROMPT_METADATA } from "
 import { createMetisAgent } from "./metis"
 import { createOrchestratorSisyphusAgent, orchestratorSisyphusAgent } from "./orchestrator-sisyphus"
 import { createMomusAgent } from "./momus"
+import { createArchitectureAdvisorAgent, ARCHITECTURE_ADVISOR_PROMPT_METADATA } from "./architecture-advisor"
 import type { AvailableAgent } from "./sisyphus-prompt-builder"
 import { deepMerge } from "../shared"
 import { DEFAULT_CATEGORIES } from "../tools/sisyphus-task/constants"
@@ -28,6 +29,7 @@ const agentSources: Record<BuiltinAgentName, AgentSource> = {
   "Metis (Plan Consultant)": createMetisAgent,
   "Momus (Plan Reviewer)": createMomusAgent,
   "orchestrator-sisyphus": orchestratorSisyphusAgent,
+  "architecture-advisor": createArchitectureAdvisorAgent,
 }
 
 /**
@@ -41,6 +43,7 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   "frontend-ui-ux-engineer": FRONTEND_PROMPT_METADATA,
   "document-writer": DOCUMENT_WRITER_PROMPT_METADATA,
   "multimodal-looker": MULTIMODAL_LOOKER_PROMPT_METADATA,
+  "architecture-advisor": ARCHITECTURE_ADVISOR_PROMPT_METADATA,
 }
 
 function isFactory(source: AgentSource): source is AgentFactory {
