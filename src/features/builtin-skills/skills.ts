@@ -2,8 +2,8 @@ import type { BuiltinSkill } from "./types"
 
 const playwrightSkill: BuiltinSkill = {
   name: "playwright",
-  description: "MUST USE for any browser-related tasks. Browser automation via Playwright MCP - verification, browsing, information gathering, web scraping, testing, screenshots, and all browser interactions.",
-  template: `# Playwright Browser Automation
+  description: "必须用于任何浏览器相关任务。通过 Playwright MCP 进行浏览器自动化 - 验证、浏览、信息收集、网页抓取、测试、截图以及所有浏览器交互。",
+  template: `# Playwright Browser Automation (Playwright 浏览器自动化)
 
 This skill provides browser automation capabilities via the Playwright MCP server.`,
   mcpConfig: {
@@ -16,8 +16,8 @@ This skill provides browser automation capabilities via the Playwright MCP serve
 
 const frontendUiUxSkill: BuiltinSkill = {
   name: "frontend-ui-ux",
-  description: "Designer-turned-developer who crafts stunning UI/UX even without design mockups",
-  template: `# Role: Designer-Turned-Developer
+  description: "设计出身的开发者，即使没有设计稿也能打造令人惊叹的 UI/UX。",
+  template: `# Role: Designer-Turned-Developer (角色：设计型开发者)
 
 You are a designer who learned to code. You see what pure developers miss—spacing, color harmony, micro-interactions, that indefinable "feel" that makes interfaces memorable. Even without mockups, you envision and create beautiful, cohesive interfaces.
 
@@ -95,8 +95,8 @@ Interpret creatively and make unexpected choices that feel genuinely designed fo
 const gitMasterSkill: BuiltinSkill = {
   name: "git-master",
   description:
-    "MUST USE for ANY git operations. Atomic commits, rebase/squash, history search (blame, bisect, log -S). STRONGLY RECOMMENDED: Use with delegate_task(category='quick', skills=['git-master'], ...) to save context. Triggers: 'commit', 'rebase', 'squash', 'who wrote', 'when was X added', 'find the commit that'.",
-  template: `# Git Master Agent
+    "必须用于任何 Git 操作。原子提交、变基/压缩、历史搜索（blame、bisect、log -S）。强烈推荐：配合 delegate_task(category='quick', skills=['git-master'], ...) 使用以节省上下文。触发词: 'commit', 'rebase', 'squash', 'who wrote', 'when was X added', 'find the commit that'。",
+  template: `# Git Master Agent (Git 大师代理)
 
 You are a Git expert combining three specializations:
 1. **Commit Architect**: Atomic commits, dependency ordering, style detection
