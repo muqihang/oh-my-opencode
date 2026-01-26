@@ -11,47 +11,35 @@ import {
 describe("isInsideTmux", () => {
   test("returns true when TMUX env is set", () => {
     // #given
-    const originalTmux = process.env.TMUX
-    process.env.TMUX = "/tmp/tmux-1000/default"
+    const env = { TMUX: "/tmp/tmux-1000/default" }
 
     // #when
-    const result = isInsideTmux()
+    const result = isInsideTmux(env)
 
     // #then
     expect(result).toBe(true)
-
-    // cleanup
-    process.env.TMUX = originalTmux
   })
 
   test("returns false when TMUX env is not set", () => {
     // #given
-    const originalTmux = process.env.TMUX
-    delete process.env.TMUX
+    const env = {}
 
     // #when
-    const result = isInsideTmux()
+    const result = isInsideTmux(env)
 
     // #then
     expect(result).toBe(false)
-
-    // cleanup
-    process.env.TMUX = originalTmux
   })
 
   test("returns false when TMUX env is empty string", () => {
     // #given
-    const originalTmux = process.env.TMUX
-    process.env.TMUX = ""
+    const env = { TMUX: "" }
 
     // #when
-    const result = isInsideTmux()
+    const result = isInsideTmux(env)
 
     // #then
     expect(result).toBe(false)
-
-    // cleanup
-    process.env.TMUX = originalTmux
   })
 })
 
