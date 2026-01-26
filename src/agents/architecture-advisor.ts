@@ -1,17 +1,26 @@
-import type { AgentConfig } from "@opencode-ai/sdk"
-import type { AgentPromptMetadata } from "./types"
-import { createAgentToolRestrictions } from "../shared/permission-compat"
+import type { AgentConfig } from "@opencode-ai/sdk";
+import type { AgentPromptMetadata } from "./types";
+import { createAgentToolRestrictions } from "../shared/permission-compat";
 
-const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5"
+const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5";
 
 export const ARCHITECTURE_ADVISOR_PROMPT_METADATA: AgentPromptMetadata = {
   category: "specialist",
   cost: "CHEAP",
   promptAlias: "Architecture Advisor",
   triggers: [
-    { domain: "Architecture Review", trigger: "RFC/ADR generation, architecture decisions" },
-    { domain: "Risk Assessment", trigger: "Security, scalability, maintainability concerns" },
-    { domain: "Multi-model Consensus", trigger: "Need diverse perspectives on design" },
+    {
+      domain: "Architecture Review",
+      trigger: "RFC/ADR generation, architecture decisions",
+    },
+    {
+      domain: "Risk Assessment",
+      trigger: "Security, scalability, maintainability concerns",
+    },
+    {
+      domain: "Multi-model Consensus",
+      trigger: "Need diverse perspectives on design",
+    },
   ],
   useWhen: [
     "Starting new architecture decision process",
@@ -24,7 +33,7 @@ export const ARCHITECTURE_ADVISOR_PROMPT_METADATA: AgentPromptMetadata = {
     "Non-architectural questions",
     "Already have clear decision (no need for review)",
   ],
-}
+};
 
 const ARCHITECTURE_ADVISOR_PROMPT = `You are the Architecture Advisor agent, a specialized consultant for architecture decision-making processes.
 
@@ -52,6 +61,19 @@ You orchestrate architecture reviews by invoking the architecture-advisor MCP to
 5. **Optional Governance Check**: Call run_governance_flow when Evidence Gate fails or compliance audit needed after review
 6. **Return Results**: Format and return the workflow output (preserve thread_id)
 
+## Context Passing (Dual-Mode Runtime)
+
+When invoked via Sisyphus (sisyphus_task), the OpenCode context is automatically passed through the MCP call chain. This enables:
+- **Seamless LLM routing**: Uses OpenCode's LLM capabilities instead of direct API calls
+- **Session continuity**: Maintains conversation context across tool invocations
+- **Cost optimization**: Reuses existing LLM session
+
+When invoking MCP tools, ensure you pass all relevant context:
+
+1. **Review Context**: Include any prior discussion or decisions from the conversation
+2. **Technical Context**: Pass relevant code snippets, file paths, or architecture diagrams mentioned
+3. **Constraints**: Explicitly state any constraints mentioned by the user or Sisyphus
+
 ## Example Usage
 
 When user asks: "Review our authentication architecture"
@@ -65,6 +87,24 @@ run_architecture_flow({
   enableCoVe: true,
   minApprovalScore: 85,
   maxIterations: 3
+})
+\`\`\`
+
+### Example with Full Context (from Sisyphus delegation)
+
+\`\`\`
+run_architecture_flow({
+  reviewId: "Review-YYYYMMDD-AUTH",
+  title: "Authentication Architecture Review",
+  techKeys: ["authentication", "security", "OAuth", "JWT"],
+  enableCoVe: true,
+  // Context from prior discussion
+  context: {
+    priorDecisions: ["Use JWT for stateless auth", "Support SSO via SAML"],
+    constraints: ["Must integrate with existing LDAP", "Max 100ms latency"],
+    relatedRFCs: ["RFC-001-Auth-Strategy"],
+    codeReferences: ["src/auth/", "src/middleware/jwt.ts"]
+  }
 })
 \`\`\`
 
@@ -83,10 +123,13 @@ Always return structured results containing:
 - ALWAYS use the MCP tools, never generate architecture advice directly
 - Match input/output language with the user's request
 - If tool invocation fails, return detailed error information
-- Preserve all metadata, evidence references, and thread_id from the workflow`
+- Preserve all metadata, evidence references, and thread_id from the workflow
+- When called via Sisyphus, the dual-mode runtime automatically handles LLM routing`;
 
-export function createArchitectureAdvisorAgent(model: string = DEFAULT_MODEL): AgentConfig {
-  const restrictions = createAgentToolRestrictions(["write", "edit"])
+export function createArchitectureAdvisorAgent(
+  model: string = DEFAULT_MODEL,
+): AgentConfig {
+  const restrictions = createAgentToolRestrictions(["write", "edit"]);
 
   return {
     description:
@@ -96,7 +139,8 @@ export function createArchitectureAdvisorAgent(model: string = DEFAULT_MODEL): A
     temperature: 0.1,
     ...restrictions,
     prompt: ARCHITECTURE_ADVISOR_PROMPT,
-  } as AgentConfig
+  } as AgentConfig;
 }
 
-export const architectureAdvisorAgent: AgentConfig = createArchitectureAdvisorAgent()
+export const architectureAdvisorAgent: AgentConfig =
+  createArchitectureAdvisorAgent();
