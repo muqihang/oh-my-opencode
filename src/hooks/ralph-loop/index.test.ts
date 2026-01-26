@@ -266,7 +266,7 @@ describe("ralph-loop", () => {
 
       // then - warning toast shown
       expect(toastCalls.length).toBe(1)
-      expect(toastCalls[0].title).toBe("Ralph Loop Stopped")
+      expect(toastCalls[0].title).toBe("Ralph Loop 已停止")
       expect(toastCalls[0].variant).toBe("warning")
 
       // then - state should be cleared
@@ -481,7 +481,7 @@ describe("ralph-loop", () => {
 
       // then - loop completed, no continuation
       expect(promptCalls.length).toBe(0)
-      expect(toastCalls.some((t) => t.title === "Ralph Loop Complete!")).toBe(true)
+      expect(toastCalls.some((t) => t.title === "Ralph Loop 完成！")).toBe(true)
       expect(hook.getState()).toBeNull()
     })
 
@@ -506,7 +506,7 @@ describe("ralph-loop", () => {
 
       // then - loop completed via API detection, no continuation
       expect(promptCalls.length).toBe(0)
-      expect(toastCalls.some((t) => t.title === "Ralph Loop Complete!")).toBe(true)
+      expect(toastCalls.some((t) => t.title === "Ralph Loop 完成！")).toBe(true)
       expect(hook.getState()).toBeNull()
 
       // then - messages API was called with correct session ID
@@ -686,7 +686,7 @@ describe("ralph-loop", () => {
 
       // then - loop should complete (promise found within last 3 assistant messages)
       expect(promptCalls.length).toBe(0)
-      expect(toastCalls.some((t) => t.title === "Ralph Loop Complete!")).toBe(true)
+      expect(toastCalls.some((t) => t.title === "Ralph Loop 完成！")).toBe(true)
       expect(hook.getState()).toBeNull()
     })
 
