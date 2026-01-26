@@ -87,7 +87,7 @@ describe("todo-continuation-enforcer", () => {
     // #then - countdown toast shown
     await new Promise(r => setTimeout(r, 100))
     expect(toastCalls.length).toBeGreaterThanOrEqual(1)
-    expect(toastCalls[0].title).toBe("Todo Continuation")
+    expect(toastCalls[0].title).toBe("待办续写")
 
     // #then - after countdown, continuation injected
     await new Promise(r => setTimeout(r, 2500))
