@@ -145,8 +145,8 @@ export function createTodoContinuationEnforcer(
   async function showCountdownToast(seconds: number, incompleteCount: number): Promise<void> {
     await ctx.client.tui.showToast({
       body: {
-        title: "Todo Continuation",
-        message: `Resuming in ${seconds}s... (${incompleteCount} tasks remaining)`,
+        title: "待办续写",
+        message: `将在 ${seconds}s 后继续...（剩余 ${incompleteCount} 个任务）`,
         variant: "warning" as const,
         duration: TOAST_DURATION_MS,
       },
