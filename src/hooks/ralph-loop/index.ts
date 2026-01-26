@@ -284,8 +284,8 @@ export function createRalphLoopHook(
         await ctx.client.tui
           .showToast({
             body: {
-              title: "Ralph Loop Stopped",
-              message: `Max iterations (${state.max_iterations}) reached without completion`,
+              title: "Ralph Loop 已停止",
+              message: `达到最大迭代次数 (${state.max_iterations})，仍未完成`,
               variant: "warning",
               duration: 5000,
             },
@@ -320,7 +320,7 @@ export function createRalphLoopHook(
         .showToast({
           body: {
             title: "Ralph Loop",
-            message: `Iteration ${newState.iteration}/${newState.max_iterations}`,
+            message: `迭代 ${newState.iteration}/${newState.max_iterations}`,
             variant: "info",
             duration: 2000,
           },
