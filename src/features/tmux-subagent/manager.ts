@@ -23,6 +23,16 @@ interface SessionCreatedEvent {
 
 const SESSION_TIMEOUT_MS = 10 * 60 * 1000
 
+type TmuxRuntimeDeps = {
+  isInsideTmux: () => boolean
+  getCurrentPaneId: () => string | undefined
+}
+
+const DEFAULT_TMUX_RUNTIME_DEPS: TmuxRuntimeDeps = {
+  isInsideTmux,
+  getCurrentPaneId,
+}
+
 /**
  * State-first Tmux Session Manager
  * 
@@ -40,16 +50,18 @@ export class TmuxSessionManager {
   private tmuxConfig: TmuxConfig
   private serverUrl: string
   private sourcePaneId: string | undefined
+  private tmuxDeps: TmuxRuntimeDeps
   private sessions = new Map<string, TrackedSession>()
   private pendingSessions = new Set<string>()
   private pollInterval?: ReturnType<typeof setInterval>
 
-  constructor(ctx: PluginInput, tmuxConfig: TmuxConfig) {
+  constructor(ctx: PluginInput, tmuxConfig: TmuxConfig, deps: Partial<TmuxRuntimeDeps> = {}) {
     this.client = ctx.client
     this.tmuxConfig = tmuxConfig
     const defaultPort = process.env.OPENCODE_PORT ?? "4096"
     this.serverUrl = ctx.serverUrl?.toString() ?? `http://localhost:${defaultPort}`
-    this.sourcePaneId = getCurrentPaneId()
+    this.tmuxDeps = { ...DEFAULT_TMUX_RUNTIME_DEPS, ...deps }
+    this.sourcePaneId = this.tmuxDeps.getCurrentPaneId()
 
     log("[tmux-session-manager] initialized", {
       configEnabled: this.tmuxConfig.enabled,
@@ -60,7 +72,7 @@ export class TmuxSessionManager {
   }
 
   private isEnabled(): boolean {
-    return this.tmuxConfig.enabled && isInsideTmux()
+    return this.tmuxConfig.enabled && this.tmuxDeps.isInsideTmux()
   }
 
   private getCapacityConfig(): CapacityConfig {
@@ -113,7 +125,7 @@ export class TmuxSessionManager {
     log("[tmux-session-manager] onSessionCreated called", {
       enabled,
       tmuxConfigEnabled: this.tmuxConfig.enabled,
-      isInsideTmux: isInsideTmux(),
+      isInsideTmux: this.tmuxDeps.isInsideTmux(),
       eventType: event.type,
       infoId: event.properties?.info?.id,
       infoParentID: event.properties?.info?.parentID,
