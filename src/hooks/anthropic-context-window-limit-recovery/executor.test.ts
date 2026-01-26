@@ -157,8 +157,8 @@ describe("executeCompact lock management", () => {
     expect(mockClient.tui.showToast).toHaveBeenCalledWith(
       expect.objectContaining({
         body: expect.objectContaining({
-          title: "Compact In Progress",
-          message: expect.stringContaining("Recovery already running"),
+          title: "正在压缩",
+          message: expect.stringContaining("恢复已在进行"),
           variant: "warning",
         }),
       }),
@@ -225,7 +225,7 @@ describe("executeCompact lock management", () => {
     // then: Toast should be shown
     const toastCalls = (mockClient.tui.showToast as any).mock.calls
     const blockedToast = toastCalls.find(
-      (call: any) => call[0]?.body?.title === "Compact In Progress",
+      (call: any) => call[0]?.body?.title === "正在压缩",
     )
     expect(blockedToast).toBeDefined()
 
@@ -257,7 +257,7 @@ describe("executeCompact lock management", () => {
     // then: Should show failure toast
     const toastCalls = (mockClient.tui.showToast as any).mock.calls
     const failureToast = toastCalls.find(
-      (call: any) => call[0]?.body?.title === "Auto Compact Failed",
+      (call: any) => call[0]?.body?.title === "自动压缩失败",
     )
     expect(failureToast).toBeDefined()
 
