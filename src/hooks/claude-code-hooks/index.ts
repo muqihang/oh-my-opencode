@@ -217,8 +217,8 @@ export function createClaudeCodeHooksHook(
           ctx.client.tui
             .showToast({
               body: {
-                title: "PreToolUse Hook Executed",
-                message: `✗ ${result.toolName ?? input.tool} ${result.hookName ?? "hook"}: BLOCKED ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
+                title: "PreToolUse 钩子已执行",
+                message: `✗ ${result.toolName ?? input.tool} ${result.hookName ?? "hook"}: 已阻止 ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
                 variant: "error",
                 duration: 4000,
               },
@@ -279,8 +279,8 @@ export function createClaudeCodeHooksHook(
           ctx.client.tui
             .showToast({
               body: {
-                title: "PostToolUse Hook Warning",
-                message: result.reason ?? "Hook returned warning",
+                title: "PostToolUse 钩子警告",
+                message: result.reason ?? "Hook 返回警告",
                 variant: "warning",
                 duration: 4000,
               },
@@ -300,7 +300,7 @@ export function createClaudeCodeHooksHook(
           ctx.client.tui
             .showToast({
               body: {
-                title: "PostToolUse Hook Executed",
+                title: "PostToolUse 钩子已执行",
                 message: `▶ ${result.toolName ?? input.tool} ${result.hookName}: ${result.elapsedMs ?? 0}ms`,
                 variant: "success",
                 duration: 2000,

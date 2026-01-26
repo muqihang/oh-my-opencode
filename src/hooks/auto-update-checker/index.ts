@@ -49,12 +49,12 @@ export function createAutoUpdateCheckerHook(ctx: PluginInput, options: AutoUpdat
   const getToastMessage = (isUpdate: boolean, latestVersion?: string): string => {
     if (isSisyphusEnabled) {
       return isUpdate
-        ? `Sisyphus on steroids is steering OpenCode.\nv${latestVersion} available. Restart to apply.`
-        : `Sisyphus on steroids is steering OpenCode.`
+        ? `强化版 Sisyphus 正在掌舵 OpenCode。\nv${latestVersion} 可用，重启以生效。`
+        : `强化版 Sisyphus 正在掌舵 OpenCode。`
     }
     return isUpdate
-      ? `OpenCode is now on Steroids. oMoMoMoMo...\nv${latestVersion} available. Restart OpenCode to apply.`
-      : `OpenCode is now on Steroids. oMoMoMoMo...`
+      ? `OpenCode 已进入增强模式。oMoMoMoMo...\nv${latestVersion} 可用，重启 OpenCode 生效。`
+      : `OpenCode 已进入增强模式。oMoMoMoMo...`
   }
 
   let hasChecked = false
@@ -175,8 +175,8 @@ async function showConfigErrorsIfAny(ctx: PluginInput): Promise<void> {
   await ctx.client.tui
     .showToast({
       body: {
-        title: "Config Load Error",
-        message: `Failed to load config:\n${errorMessages}`,
+        title: "配置加载错误",
+        message: `配置加载失败：\n${errorMessages}`,
         variant: "error" as const,
         duration: 10000,
       },
@@ -236,8 +236,8 @@ async function showAutoUpdatedToast(ctx: PluginInput, oldVersion: string, newVer
   await ctx.client.tui
     .showToast({
       body: {
-        title: `OhMyOpenCode Updated!`,
-        message: `v${oldVersion} → v${newVersion}\nRestart OpenCode to apply.`,
+        title: `OhMyOpenCode 已更新！`,
+        message: `v${oldVersion} → v${newVersion}\n请重启 OpenCode 生效。`,
         variant: "success" as const,
         duration: 8000,
       },
@@ -249,8 +249,8 @@ async function showAutoUpdatedToast(ctx: PluginInput, oldVersion: string, newVer
 async function showLocalDevToast(ctx: PluginInput, version: string | null, isSisyphusEnabled: boolean): Promise<void> {
   const displayVersion = version ?? "dev"
   const message = isSisyphusEnabled
-    ? "Sisyphus running in local development mode."
-    : "Running in local development mode. oMoMoMo..."
+    ? "Sisyphus 运行在本地开发模式。"
+    : "本地开发模式运行中。oMoMoMo..."
   await showSpinnerToast(ctx, `${displayVersion} (dev)`, message)
   log(`[auto-update-checker] Local dev toast shown: v${displayVersion}`)
 }
