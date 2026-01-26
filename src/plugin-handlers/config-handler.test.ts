@@ -12,8 +12,8 @@ describe("Prometheus category config resolution", () => {
 
     // #then
     expect(config).toBeDefined()
-    expect(config?.model).toBe("openai/gpt-5.2")
-    expect(config?.temperature).toBe(0.1)
+    expect(config?.model).toBe("openai/gpt-5.2-codex")
+    expect(config?.variant).toBe("xhigh")
   })
 
   test("resolves visual-engineering category config", () => {
@@ -25,8 +25,7 @@ describe("Prometheus category config resolution", () => {
 
     // #then
     expect(config).toBeDefined()
-    expect(config?.model).toBe("google/gemini-3-pro-preview")
-    expect(config?.temperature).toBe(0.7)
+    expect(config?.model).toBe("google/gemini-3-pro")
   })
 
   test("user categories override default categories", () => {
@@ -71,10 +70,10 @@ describe("Prometheus category config resolution", () => {
     // #when
     const config = resolveCategoryConfig(categoryName, userCategories)
 
-    // #then
+    // #then - falls back to DEFAULT_CATEGORIES
     expect(config).toBeDefined()
-    expect(config?.model).toBe("openai/gpt-5.2")
-    expect(config?.temperature).toBe(0.1)
+    expect(config?.model).toBe("openai/gpt-5.2-codex")
+    expect(config?.variant).toBe("xhigh")
   })
 
   test("preserves all category properties (temperature, top_p, tools, etc.)", () => {

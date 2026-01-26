@@ -2,6 +2,39 @@
 
 Highly opinionated, but adjustable to taste.
 
+## Quick Start
+
+**Most users don't need to configure anything manually.** Run the interactive installer:
+
+```bash
+bunx oh-my-opencode install
+```
+
+It asks about your providers (Claude, OpenAI, Gemini, etc.) and generates optimal config automatically.
+
+**Want to customize?** Here's the common patterns:
+
+```jsonc
+{
+  "$schema": "https://raw.githubusercontent.com/code-yeongyu/oh-my-opencode/master/assets/oh-my-opencode.schema.json",
+  
+  // Override specific agent models
+  "agents": {
+    "oracle": { "model": "openai/gpt-5.2" },           // Use GPT for debugging
+    "librarian": { "model": "zai-coding-plan/glm-4.7" }, // Cheap model for research
+    "explore": { "model": "opencode/gpt-5-nano" }        // Free model for grep
+  },
+  
+  // Override category models (used by delegate_task)
+  "categories": {
+    "quick": { "model": "opencode/gpt-5-nano" },         // Fast/cheap for trivial tasks
+    "visual-engineering": { "model": "google/gemini-3-pro" } // Gemini for UI
+  }
+}
+```
+
+**Find available models:** Run `opencode models` to see all models in your environment.
+
 ## Config File Locations
 
 Config file locations (priority order):
@@ -42,7 +75,7 @@ When both `oh-my-opencode.jsonc` and `oh-my-opencode.json` files exist, `.jsonc`
       "model": "openai/gpt-5.2"  // GPT for strategic reasoning
     },
     "explore": {
-      "model": "opencode/grok-code"  // Free & fast for exploration
+      "model": "opencode/gpt-5-nano"  // Free & fast for exploration
     },
   },
 }
@@ -50,7 +83,7 @@ When both `oh-my-opencode.jsonc` and `oh-my-opencode.json` files exist, `.jsonc`
 
 ## Google Auth
 
-**Recommended**: For Google Gemini authentication, install the [`opencode-antigravity-auth`](https://github.com/NoeFabris/opencode-antigravity-auth) plugin. It provides multi-account load balancing, more models (including Claude via Antigravity), and active maintenance. See [Installation > Google Gemini](../README.md#google-gemini-antigravity-oauth).
+**Recommended**: For Google Gemini authentication, install the [`opencode-antigravity-auth`](https://github.com/NoeFabris/opencode-antigravity-auth) plugin (`@latest`). It provides multi-account load balancing, variant-based thinking levels, dual quota system (Antigravity + Gemini CLI), and active maintenance. See [Installation > Google Gemini](docs/guide/installation.md#google-gemini-antigravity-oauth).
 
 ## Agents
 
@@ -63,7 +96,7 @@ Override built-in agent settings:
       "model": "anthropic/claude-haiku-4-5",
       "temperature": 0.5
     },
-    "frontend-ui-ux-engineer": {
+    "multimodal-looker": {
       "disable": true
     }
   }
@@ -116,18 +149,18 @@ Or disable via `disabled_agents` in `~/.config/opencode/oh-my-opencode.json` or 
 
 ```json
 {
-  "disabled_agents": ["oracle", "frontend-ui-ux-engineer"]
+  "disabled_agents": ["oracle", "multimodal-looker"]
 }
 ```
 
-Available agents: `oracle`, `librarian`, `explore`, `frontend-ui-ux-engineer`, `document-writer`, `multimodal-looker`
+Available agents: `oracle`, `librarian`, `explore`, `multimodal-looker`
 
 ## Built-in Skills
 
 Oh My OpenCode includes built-in skills that provide additional capabilities:
 
-- **playwright**: Browser automation with Playwright MCP. Use for web scraping, testing, screenshots, and browser interactions.
-- **git-master**: Git expert for atomic commits, rebase/squash, and history search (blame, bisect, log -S). STRONGLY RECOMMENDED: Use with `delegate_task(category='quick', skills=['git-master'], ...)` to save context.
+- **playwright** (default) / **agent-browser**: Browser automation for web scraping, testing, screenshots, and browser interactions. See [Browser Automation](#browser-automation) for switching between providers.
+- **git-master**: Git expert for atomic commits, rebase/squash, and history search (blame, bisect, log -S). STRONGLY RECOMMENDED: Use with `delegate_task(category='quick', load_skills=['git-master'], ...)` to save context.
 
 Disable built-in skills via `disabled_skills` in `~/.config/opencode/oh-my-opencode.json` or `.opencode/oh-my-opencode.json`:
 
@@ -137,7 +170,54 @@ Disable built-in skills via `disabled_skills` in `~/.config/opencode/oh-my-openc
 }
 ```
 
-Available built-in skills: `playwright`, `git-master`
+Available built-in skills: `playwright`, `agent-browser`, `git-master`
+
+## Browser Automation
+
+Choose between two browser automation providers:
+
+| Provider | Interface | Features | Installation |
+|----------|-----------|----------|--------------|
+| **playwright** (default) | MCP tools | Playwright MCP server with structured tool calls | Auto-installed via npx |
+| **agent-browser** | Bash CLI | Vercel's CLI with session management, parallel browsers | Requires `bun add -g agent-browser` |
+
+**Switch providers** via `browser_automation_engine` in `oh-my-opencode.json`:
+
+```json
+{
+  "browser_automation_engine": {
+    "provider": "agent-browser"
+  }
+}
+```
+
+### Playwright (Default)
+
+Uses the official Playwright MCP server (`@playwright/mcp`). Browser automation happens through structured MCP tool calls.
+
+### agent-browser
+
+Uses [Vercel's agent-browser CLI](https://github.com/vercel-labs/agent-browser). Key advantages:
+- **Session management**: Run multiple isolated browser instances with `--session` flag
+- **Persistent profiles**: Keep browser state across restarts with `--profile`
+- **Snapshot-based workflow**: Get element refs via `snapshot -i`, interact with `@e1`, `@e2`, etc.
+- **CLI-first**: All commands via Bash - great for scripting
+
+**Installation required**:
+```bash
+bun add -g agent-browser
+agent-browser install  # Download Chromium
+```
+
+**Example workflow**:
+```bash
+agent-browser open https://example.com
+agent-browser snapshot -i  # Get interactive elements with refs
+agent-browser fill @e1 "user@example.com"
+agent-browser click @e2
+agent-browser screenshot result.png
+agent-browser close
+```
 
 ## Git Master
 
@@ -272,7 +352,7 @@ Categories enable domain-specific task delegation via the `delegate_task` tool. 
 
 | Category         | Model                         | Description                                                                  |
 | ---------------- | ----------------------------- | ---------------------------------------------------------------------------- |
-| `visual`         | `google/gemini-3-pro-preview` | Frontend, UI/UX, design-focused tasks. High creativity (temp 0.7).           |
+| `visual`         | `google/gemini-3-pro` | Frontend, UI/UX, design-focused tasks. High creativity (temp 0.7).           |
 | `business-logic` | `openai/gpt-5.2`              | Backend logic, architecture, strategic reasoning. Low creativity (temp 0.1). |
 
 **Usage:**
@@ -299,7 +379,7 @@ Add custom categories in `oh-my-opencode.json`:
       "prompt_append": "Focus on data analysis, ML pipelines, and statistical methods."
     },
     "visual": {
-      "model": "google/gemini-3-pro-preview",
+      "model": "google/gemini-3-pro",
       "prompt_append": "Use shadcn/ui components and Tailwind CSS."
     }
   }
@@ -307,6 +387,128 @@ Add custom categories in `oh-my-opencode.json`:
 ```
 
 Each category supports: `model`, `temperature`, `top_p`, `maxTokens`, `thinking`, `reasoningEffort`, `textVerbosity`, `tools`, `prompt_append`.
+
+## Model Resolution System
+
+At runtime, Oh My OpenCode uses a 3-step resolution process to determine which model to use for each agent and category. This happens dynamically based on your configuration and available models.
+
+### Overview
+
+**Problem**: Users have different provider configurations. The system needs to select the best available model for each task at runtime.
+
+**Solution**: A simple 3-step resolution flow:
+1. **Step 1: User Override** — If you specify a model in `oh-my-opencode.json`, use exactly that
+2. **Step 2: Provider Fallback** — Try each provider in the requirement's priority order until one is available
+3. **Step 3: System Default** — Fall back to OpenCode's configured default model
+
+### Resolution Flow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                     MODEL RESOLUTION FLOW                        │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                 │
+│   Step 1: USER OVERRIDE                                         │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │ User specified model in oh-my-opencode.json?            │   │
+│   │         YES → Use exactly as specified                  │   │
+│   │         NO  → Continue to Step 2                        │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼                                  │
+│   Step 2: PROVIDER PRIORITY FALLBACK                            │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │ For each provider in requirement.providers order:       │   │
+│   │                                                         │   │
+│   │ Example for Sisyphus:                                   │   │
+│   │ anthropic → github-copilot → opencode → antigravity     │   │
+│   │     │            │              │            │          │   │
+│   │     ▼            ▼              ▼            ▼          │   │
+│   │ Try: anthropic/claude-opus-4-5                          │   │
+│   │ Try: github-copilot/claude-opus-4-5                     │   │
+│   │ Try: opencode/claude-opus-4-5                           │   │
+│   │ ...                                                     │   │
+│   │                                                         │   │
+│   │ Found in available models? → Return matched model       │   │
+│   │ Not found? → Try next provider                          │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                              │                                  │
+│                              ▼ (all providers exhausted)        │
+│   Step 3: SYSTEM DEFAULT                                        │
+│   ┌─────────────────────────────────────────────────────────┐   │
+│   │ Return systemDefaultModel (from opencode.json)          │   │
+│   └─────────────────────────────────────────────────────────┘   │
+│                                                                 │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Agent Provider Chains
+
+Each agent has a defined provider priority chain. The system tries providers in order until it finds an available model:
+
+| Agent | Model (no prefix) | Provider Priority Chain |
+|-------|-------------------|-------------------------|
+| **Sisyphus** | `claude-opus-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **oracle** | `gpt-5.2` | openai → anthropic → google → github-copilot → opencode |
+| **librarian** | `big-pickle` | opencode → github-copilot → anthropic |
+| **explore** | `gpt-5-nano` | anthropic → opencode |
+| **multimodal-looker** | `gemini-3-flash` | google → openai → zai-coding-plan → anthropic → opencode |
+| **Prometheus (Planner)** | `claude-opus-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **Metis (Plan Consultant)** | `claude-sonnet-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **Momus (Plan Reviewer)** | `claude-opus-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **Atlas** | `claude-sonnet-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+
+### Category Provider Chains
+
+Categories follow the same resolution logic:
+
+| Category | Model (no prefix) | Provider Priority Chain |
+|----------|-------------------|-------------------------|
+| **visual-engineering** | `gemini-3-pro` | google → openai → anthropic → github-copilot → opencode |
+| **ultrabrain** | `gpt-5.2-codex` | openai → anthropic → google → github-copilot → opencode |
+| **artistry** | `gemini-3-pro` | google → openai → anthropic → github-copilot → opencode |
+| **quick** | `claude-haiku-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **unspecified-low** | `claude-sonnet-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **unspecified-high** | `claude-opus-4-5` | anthropic → github-copilot → opencode → antigravity → google |
+| **writing** | `gemini-3-flash` | google → openai → anthropic → github-copilot → opencode |
+
+### Checking Your Configuration
+
+Use the `doctor` command to see how models resolve with your current configuration:
+
+```bash
+bunx oh-my-opencode doctor --verbose
+```
+
+The "Model Resolution" check shows:
+- Each agent/category's model requirement
+- Provider fallback chain
+- User overrides (if configured)
+- Effective resolution path
+
+### Manual Override
+
+Override any agent or category model in `oh-my-opencode.json`:
+
+```json
+{
+  "agents": {
+    "Sisyphus": {
+      "model": "anthropic/claude-sonnet-4-5"
+    },
+    "oracle": {
+      "model": "openai/o3"
+    }
+  },
+  "categories": {
+    "visual-engineering": {
+      "model": "anthropic/claude-opus-4-5"
+    }
+  }
+}
+```
+
+When you specify a model override, it takes precedence (Step 1) and the provider fallback chain is skipped entirely.
 
 ## Hooks
 

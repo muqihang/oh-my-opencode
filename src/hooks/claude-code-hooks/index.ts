@@ -218,7 +218,7 @@ export function createClaudeCodeHooksHook(
             .showToast({
               body: {
                 title: "PreToolUse 钩子已执行",
-                message: `✗ ${result.toolName ?? input.tool} ${result.hookName ?? "hook"}: 已阻止 ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
+                message: `[已阻止] ${result.toolName ?? input.tool} ${result.hookName ?? "hook"}: ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
                 variant: "error",
                 duration: 4000,
               },

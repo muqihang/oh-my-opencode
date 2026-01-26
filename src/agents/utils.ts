@@ -5,32 +5,33 @@ import { createSisyphusAgent } from "./sisyphus"
 import { createOracleAgent, ORACLE_PROMPT_METADATA } from "./oracle"
 import { createLibrarianAgent, LIBRARIAN_PROMPT_METADATA } from "./librarian"
 import { createExploreAgent, EXPLORE_PROMPT_METADATA } from "./explore"
-import { createFrontendUiUxEngineerAgent, FRONTEND_PROMPT_METADATA } from "./frontend-ui-ux-engineer"
-import { createDocumentWriterAgent, DOCUMENT_WRITER_PROMPT_METADATA } from "./document-writer"
 import { createMultimodalLookerAgent, MULTIMODAL_LOOKER_PROMPT_METADATA } from "./multimodal-looker"
 import { createMetisAgent } from "./metis"
-import { createOrchestratorSisyphusAgent, orchestratorSisyphusAgent } from "./orchestrator-sisyphus"
+import { createAtlasAgent } from "./atlas"
 import { createMomusAgent } from "./momus"
 import { createArchitectureAdvisorAgent, ARCHITECTURE_ADVISOR_PROMPT_METADATA } from "./architecture-advisor"
-import type { AvailableAgent } from "./sisyphus-prompt-builder"
-import { deepMerge } from "../shared"
-import { DEFAULT_CATEGORIES } from "../tools/delegate-task/constants"
+import type { AvailableAgent, AvailableCategory, AvailableSkill } from "./dynamic-agent-prompt-builder"
+import { deepMerge, fetchAvailableModels, resolveModelWithFallback, AGENT_MODEL_REQUIREMENTS, findCaseInsensitive, includesCaseInsensitive } from "../shared"
+import { DEFAULT_CATEGORIES, CATEGORY_DESCRIPTIONS } from "../tools/delegate-task/constants"
 import { resolveMultipleSkills } from "../features/opencode-skill-loader/skill-content"
+import { createBuiltinSkills } from "../features/builtin-skills"
+import type { LoadedSkill, SkillScope } from "../features/opencode-skill-loader/types"
+import type { BrowserAutomationProvider } from "../config/schema"
 
 type AgentSource = AgentFactory | AgentConfig
 
 const agentSources: Record<BuiltinAgentName, AgentSource> = {
-  Sisyphus: createSisyphusAgent,
+  sisyphus: createSisyphusAgent,
   oracle: createOracleAgent,
   librarian: createLibrarianAgent,
   explore: createExploreAgent,
-  "frontend-ui-ux-engineer": createFrontendUiUxEngineerAgent,
-  "document-writer": createDocumentWriterAgent,
   "multimodal-looker": createMultimodalLookerAgent,
-  "Metis (Plan Consultant)": createMetisAgent,
-  "Momus (Plan Reviewer)": createMomusAgent,
-  "orchestrator-sisyphus": orchestratorSisyphusAgent,
+  metis: createMetisAgent,
+  momus: createMomusAgent,
   "architecture-advisor": createArchitectureAdvisorAgent,
+  // Note: Atlas is handled specially in createBuiltinAgents()
+  // because it needs OrchestratorContext, not just a model string
+  atlas: createAtlasAgent as unknown as AgentFactory,
 }
 
 /**
@@ -41,8 +42,6 @@ const agentMetadata: Partial<Record<BuiltinAgentName, AgentPromptMetadata>> = {
   oracle: ORACLE_PROMPT_METADATA,
   librarian: LIBRARIAN_PROMPT_METADATA,
   explore: EXPLORE_PROMPT_METADATA,
-  "frontend-ui-ux-engineer": FRONTEND_PROMPT_METADATA,
-  "document-writer": DOCUMENT_WRITER_PROMPT_METADATA,
   "multimodal-looker": MULTIMODAL_LOOKER_PROMPT_METADATA,
   "architecture-advisor": ARCHITECTURE_ADVISOR_PROMPT_METADATA,
 }
@@ -53,9 +52,10 @@ function isFactory(source: AgentSource): source is AgentFactory {
 
 export function buildAgent(
   source: AgentSource,
-  model?: string,
+  model: string,
   categories?: CategoriesConfig,
-  gitMasterConfig?: GitMasterConfig
+  gitMasterConfig?: GitMasterConfig,
+  browserProvider?: BrowserAutomationProvider
 ): AgentConfig {
   const base = isFactory(source) ? source(model) : source
   const categoryConfigs: Record<string, CategoryConfig> = categories
@@ -79,7 +79,7 @@ export function buildAgent(
   }
 
   if (agentWithCategory.skills?.length) {
-    const { resolved } = resolveMultipleSkills(agentWithCategory.skills, { gitMasterConfig })
+    const { resolved } = resolveMultipleSkills(agentWithCategory.skills, { gitMasterConfig, browserProvider })
     if (resolved.size > 0) {
       const skillContent = Array.from(resolved.values()).join("\n\n")
       base.prompt = skillContent + (base.prompt ? "\n\n" + base.prompt : "")
@@ -100,7 +100,14 @@ export function createEnvContext(): string {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone
   const locale = Intl.DateTimeFormat().resolvedOptions().locale
 
-  const timeStr = now.toLocaleTimeString("en-US", {
+  const dateStr = now.toLocaleDateString(locale, {
+    weekday: "short",
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  })
+
+  const timeStr = now.toLocaleTimeString(locale, {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit",
@@ -109,6 +116,7 @@ export function createEnvContext(): string {
 
   return `
 <omo-env>
+  Current date: ${dateStr}
   Current time: ${timeStr}
   Timezone: ${timezone}
   Locale: ${locale}
@@ -129,14 +137,30 @@ function mergeAgentConfig(
   return merged
 }
 
-export function createBuiltinAgents(
-  disabledAgents: BuiltinAgentName[] = [],
+function mapScopeToLocation(scope: SkillScope): AvailableSkill["location"] {
+  if (scope === "user" || scope === "opencode") return "user"
+  if (scope === "project" || scope === "opencode-project") return "project"
+  return "plugin"
+}
+
+export async function createBuiltinAgents(
+  disabledAgents: string[] = [],
   agentOverrides: AgentOverrides = {},
   directory?: string,
   systemDefaultModel?: string,
   categories?: CategoriesConfig,
-  gitMasterConfig?: GitMasterConfig
-): Record<string, AgentConfig> {
+  gitMasterConfig?: GitMasterConfig,
+  discoveredSkills: LoadedSkill[] = [],
+  client?: any,
+  browserProvider?: BrowserAutomationProvider
+): Promise<Record<string, AgentConfig>> {
+  if (!systemDefaultModel) {
+    throw new Error("createBuiltinAgents requires systemDefaultModel")
+  }
+
+  // Fetch available models at plugin init
+  const availableModels = client ? await fetchAvailableModels(client) : new Set<string>()
+
   const result: Record<string, AgentConfig> = {}
   const availableAgents: AvailableAgent[] = []
 
@@ -144,17 +168,56 @@ export function createBuiltinAgents(
     ? { ...DEFAULT_CATEGORIES, ...categories }
     : DEFAULT_CATEGORIES
 
-  for (const [name, source] of Object.entries(agentSources)) {
-    const agentName = name as BuiltinAgentName
+  const availableCategories: AvailableCategory[] = Object.entries(mergedCategories).map(([name]) => ({
+    name,
+    description: categories?.[name]?.description ?? CATEGORY_DESCRIPTIONS[name] ?? "General tasks",
+  }))
 
-    if (agentName === "Sisyphus") continue
-    if (agentName === "orchestrator-sisyphus") continue
-    if (disabledAgents.includes(agentName)) continue
+  const builtinSkills = createBuiltinSkills({ browserProvider })
+  const builtinSkillNames = new Set(builtinSkills.map(s => s.name))
 
-    const override = agentOverrides[agentName]
-    const model = override?.model
+  const builtinAvailable: AvailableSkill[] = builtinSkills.map((skill) => ({
+    name: skill.name,
+    description: skill.description,
+    location: "plugin" as const,
+  }))
 
-    let config = buildAgent(source, model, mergedCategories, gitMasterConfig)
+  const discoveredAvailable: AvailableSkill[] = discoveredSkills
+    .filter(s => !builtinSkillNames.has(s.name))
+    .map((skill) => ({
+      name: skill.name,
+      description: skill.definition.description ?? "",
+      location: mapScopeToLocation(skill.scope),
+    }))
+
+  const availableSkills: AvailableSkill[] = [...builtinAvailable, ...discoveredAvailable]
+
+   for (const [name, source] of Object.entries(agentSources)) {
+     const agentName = name as BuiltinAgentName
+
+     if (agentName === "sisyphus") continue
+     if (agentName === "atlas") continue
+     if (includesCaseInsensitive(disabledAgents, agentName)) continue
+
+    const override = findCaseInsensitive(agentOverrides, agentName)
+    const requirement = AGENT_MODEL_REQUIREMENTS[agentName]
+    
+    // Use resolver to determine model
+    const { model, variant: resolvedVariant } = resolveModelWithFallback({
+      userModel: override?.model,
+      fallbackChain: requirement?.fallbackChain,
+      availableModels,
+      systemDefaultModel,
+    })
+
+    let config = buildAgent(source, model, mergedCategories, gitMasterConfig, browserProvider)
+    
+    // Apply variant from override or resolved fallback chain
+    if (override?.variant) {
+      config = { ...config, variant: override.variant }
+    } else if (resolvedVariant) {
+      config = { ...config, variant: resolvedVariant }
+    }
 
     if (agentName === "librarian" && directory && config.prompt) {
       const envContext = createEnvContext()
@@ -177,11 +240,32 @@ export function createBuiltinAgents(
     }
   }
 
-  if (!disabledAgents.includes("Sisyphus")) {
-    const sisyphusOverride = agentOverrides["Sisyphus"]
-    const sisyphusModel = sisyphusOverride?.model ?? systemDefaultModel
+   if (!disabledAgents.includes("sisyphus")) {
+     const sisyphusOverride = agentOverrides["sisyphus"]
+     const sisyphusRequirement = AGENT_MODEL_REQUIREMENTS["sisyphus"]
+    
+    // Use resolver to determine model
+    const { model: sisyphusModel, variant: sisyphusResolvedVariant } = resolveModelWithFallback({
+      userModel: sisyphusOverride?.model,
+      fallbackChain: sisyphusRequirement?.fallbackChain,
+      availableModels,
+      systemDefaultModel,
+    })
 
-    let sisyphusConfig = createSisyphusAgent(sisyphusModel, availableAgents)
+    let sisyphusConfig = createSisyphusAgent(
+      sisyphusModel,
+      availableAgents,
+      undefined,
+      availableSkills,
+      availableCategories
+    )
+    
+    // Apply variant from override or resolved fallback chain
+    if (sisyphusOverride?.variant) {
+      sisyphusConfig = { ...sisyphusConfig, variant: sisyphusOverride.variant }
+    } else if (sisyphusResolvedVariant) {
+      sisyphusConfig = { ...sisyphusConfig, variant: sisyphusResolvedVariant }
+    }
 
     if (directory && sisyphusConfig.prompt) {
       const envContext = createEnvContext()
@@ -192,23 +276,41 @@ export function createBuiltinAgents(
       sisyphusConfig = mergeAgentConfig(sisyphusConfig, sisyphusOverride)
     }
 
-    result["Sisyphus"] = sisyphusConfig
-  }
+     result["sisyphus"] = sisyphusConfig
+   }
 
-  if (!disabledAgents.includes("orchestrator-sisyphus")) {
-    const orchestratorOverride = agentOverrides["orchestrator-sisyphus"]
-    const orchestratorModel = orchestratorOverride?.model ?? systemDefaultModel
-    let orchestratorConfig = createOrchestratorSisyphusAgent({
-      model: orchestratorModel,
-      availableAgents,
+   if (!disabledAgents.includes("atlas")) {
+     const orchestratorOverride = agentOverrides["atlas"]
+     const atlasRequirement = AGENT_MODEL_REQUIREMENTS["atlas"]
+    
+    // Use resolver to determine model
+    const { model: atlasModel, variant: atlasResolvedVariant } = resolveModelWithFallback({
+      userModel: orchestratorOverride?.model,
+      fallbackChain: atlasRequirement?.fallbackChain,
+      availableModels,
+      systemDefaultModel,
     })
+    
+    let orchestratorConfig = createAtlasAgent({
+      model: atlasModel,
+      availableAgents,
+      availableSkills,
+      userCategories: categories,
+    })
+    
+    // Apply variant from override or resolved fallback chain
+    if (orchestratorOverride?.variant) {
+      orchestratorConfig = { ...orchestratorConfig, variant: orchestratorOverride.variant }
+    } else if (atlasResolvedVariant) {
+      orchestratorConfig = { ...orchestratorConfig, variant: atlasResolvedVariant }
+    }
 
     if (orchestratorOverride) {
       orchestratorConfig = mergeAgentConfig(orchestratorConfig, orchestratorOverride)
     }
 
-    result["orchestrator-sisyphus"] = orchestratorConfig
-  }
+     result["atlas"] = orchestratorConfig
+   }
 
-  return result
-}
+   return result
+ }

@@ -24,6 +24,7 @@ export class TaskToastManager {
     agent: string
     isBackground: boolean
     status?: TaskStatus
+    category?: string
     skills?: string[]
     modelInfo?: ModelFallbackInfo
   }): void {
@@ -34,6 +35,7 @@ export class TaskToastManager {
       status: task.status ?? "running",
       startedAt: new Date(),
       isBackground: task.isBackground,
+      category: task.category,
       skills: task.skills,
       modelInfo: task.modelInfo,
     }
@@ -116,7 +118,7 @@ export class TaskToastManager {
         "system-default": " (system default fallback)",
       }
       const suffix = suffixMap[newTask.modelInfo!.type as "inherited" | "system-default"]
-      lines.push(`⚠️ Model fallback: ${newTask.modelInfo!.model}${suffix}`)
+      lines.push(`[FALLBACK] Model: ${newTask.modelInfo!.model}${suffix}`)
       lines.push("")
     }
 
@@ -124,10 +126,11 @@ export class TaskToastManager {
       lines.push(`运行中 (${running.length}):${concurrencyInfo}`)
       for (const task of running) {
         const duration = this.formatDuration(task.startedAt)
-        const bgIcon = task.isBackground ? "⚡" : "🔄"
+        const bgIcon = task.isBackground ? "[BG]" : "[RUN]"
         const isNew = task.id === newTask.id ? " ← 新" : ""
+        const categoryInfo = task.category ? `/${task.category}` : ""
         const skillsInfo = task.skills?.length ? ` [${task.skills.join(", ")}]` : ""
-        lines.push(`${bgIcon} ${task.description} (${task.agent})${skillsInfo} - ${duration}${isNew}`)
+        lines.push(`${bgIcon} ${task.description} (${task.agent}${categoryInfo})${skillsInfo} - ${duration}${isNew}`)
       }
     }
 
@@ -135,10 +138,11 @@ export class TaskToastManager {
       if (lines.length > 0) lines.push("")
       lines.push(`排队中 (${queued.length}):`)
       for (const task of queued) {
-        const bgIcon = task.isBackground ? "⏳" : "⏸️"
+        const bgIcon = task.isBackground ? "[Q]" : "[W]"
+        const categoryInfo = task.category ? `/${task.category}` : ""
         const skillsInfo = task.skills?.length ? ` [${task.skills.join(", ")}]` : ""
-        const isNew = task.id === newTask.id ? " ← NEW" : ""
-        lines.push(`${bgIcon} ${task.description} (${task.agent})${skillsInfo} - Queued${isNew}`)
+        const isNew = task.id === newTask.id ? " ← 新" : ""
+        lines.push(`${bgIcon} ${task.description} (${task.agent}${categoryInfo})${skillsInfo} - 排队中${isNew}`)
       }
     }
 
