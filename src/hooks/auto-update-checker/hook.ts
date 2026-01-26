@@ -14,12 +14,12 @@ export function createAutoUpdateCheckerHook(ctx: PluginInput, options: AutoUpdat
   const getToastMessage = (isUpdate: boolean, latestVersion?: string): string => {
     if (isSisyphusEnabled) {
       return isUpdate
-        ? `Sisyphus on steroids is steering OpenCode.\nv${latestVersion} available. Restart to apply.`
-        : "Sisyphus on steroids is steering OpenCode."
+        ? `强化版 Sisyphus 正在掌舵 OpenCode。\nv${latestVersion} 可用，重启以生效。`
+        : "强化版 Sisyphus 正在掌舵 OpenCode。"
     }
     return isUpdate
-      ? `OpenCode is now on Steroids. oMoMoMoMo...\nv${latestVersion} available. Restart OpenCode to apply.`
-      : "OpenCode is now on Steroids. oMoMoMoMo..."
+      ? `OpenCode 已进入增强模式。oMoMoMoMo...\nv${latestVersion} 可用，重启 OpenCode 生效。`
+      : "OpenCode 已进入增强模式。oMoMoMoMo..."
   }
 
   let hasChecked = false

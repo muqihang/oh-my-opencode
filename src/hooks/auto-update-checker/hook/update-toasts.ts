@@ -23,8 +23,8 @@ export async function showAutoUpdatedToast(ctx: PluginInput, oldVersion: string,
   await ctx.client.tui
     .showToast({
       body: {
-        title: "OhMyOpenCode Updated!",
-        message: `v${oldVersion} → v${newVersion}\nRestart OpenCode to apply.`,
+        title: "OhMyOpenCode 已更新！",
+        message: `v${oldVersion} → v${newVersion}\n请重启 OpenCode 生效。`,
         variant: "success" as const,
         duration: 8000,
       },

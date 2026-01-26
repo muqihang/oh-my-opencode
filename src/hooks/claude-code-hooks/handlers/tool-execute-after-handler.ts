@@ -70,8 +70,8 @@ export function createToolExecuteAfterHandler(ctx: PluginInput, config: PluginCo
 			ctx.client.tui
 				.showToast({
 					body: {
-						title: "PostToolUse Hook Warning",
-						message: result.reason ?? "Hook returned warning",
+						title: "PostToolUse 钩子警告",
+						message: result.reason ?? "Hook 返回警告",
 						variant: "warning",
 						duration: 4000,
 					},
@@ -91,7 +91,7 @@ export function createToolExecuteAfterHandler(ctx: PluginInput, config: PluginCo
 			ctx.client.tui
 				.showToast({
 					body: {
-						title: "PostToolUse Hook Executed",
+						title: "PostToolUse 钩子已执行",
 						message: `▶ ${result.toolName ?? input.tool} ${result.hookName}: ${
 							result.elapsedMs ?? 0
 						}ms`,

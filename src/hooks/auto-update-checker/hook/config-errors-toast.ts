@@ -10,8 +10,8 @@ export async function showConfigErrorsIfAny(ctx: PluginInput): Promise<void> {
   await ctx.client.tui
     .showToast({
       body: {
-        title: "Config Load Error",
-        message: `Failed to load config:\n${errorMessages}`,
+        title: "配置加载错误",
+        message: `配置加载失败：\n${errorMessages}`,
         variant: "error" as const,
         duration: 10000,
       },

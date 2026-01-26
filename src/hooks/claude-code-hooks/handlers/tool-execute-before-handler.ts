@@ -73,10 +73,10 @@ export function createToolExecuteBeforeHandler(ctx: PluginInput, config: PluginC
 			ctx.client.tui
 				.showToast({
 					body: {
-						title: "PreToolUse Hook Executed",
-						message: `[BLOCKED] ${result.toolName ?? input.tool} ${
+						title: "PreToolUse 钩子已执行",
+						message: `✗ ${result.toolName ?? input.tool} ${
 							result.hookName ?? "hook"
-						}: ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
+						}: 已阻止 ${result.elapsedMs ?? 0}ms\n${result.inputLines ?? ""}`,
 						variant: "error" as const,
 						duration: 4000,
 					},
