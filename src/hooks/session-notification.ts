@@ -150,7 +150,7 @@ export function createSessionNotification(
 
   const mergedConfig = {
     title: "OpenCode",
-    message: "Agent is ready for input",
+    message: "代理已就绪，等待输入",
     playSound: false,
     soundPath: defaultSoundPath,
     idleConfirmationDelay: 1500,

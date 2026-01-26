@@ -368,14 +368,14 @@ export function createSessionRecoveryHook(ctx: PluginInput, options?: SessionRec
       }
 
       const toastTitles: Record<RecoveryErrorType & string, string> = {
-        tool_result_missing: "Tool Crash Recovery",
-        thinking_block_order: "Thinking Block Recovery",
-        thinking_disabled_violation: "Thinking Strip Recovery",
+        tool_result_missing: "工具崩溃恢复",
+        thinking_block_order: "思考块恢复",
+        thinking_disabled_violation: "思考块剥离恢复",
       }
       const toastMessages: Record<RecoveryErrorType & string, string> = {
-        tool_result_missing: "Injecting cancelled tool results...",
-        thinking_block_order: "Fixing message structure...",
-        thinking_disabled_violation: "Stripping thinking blocks...",
+        tool_result_missing: "正在注入已取消的工具结果...",
+        thinking_block_order: "正在修复消息结构...",
+        thinking_disabled_violation: "正在剥离思考块...",
       }
 
       await ctx.client.tui
