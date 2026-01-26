@@ -288,10 +288,10 @@ describe("keyword-detector word boundary", () => {
       output
     )
 
-    // #then - ultrawork should NOT be triggered
-    expect(output.message.variant).toBeUndefined()
-    expect(toastCalls).not.toContain("Ultrawork Mode Activated")
-  })
+	    // #then - ultrawork should NOT be triggered
+	    expect(output.message.variant).toBeUndefined()
+	    expect(toastCalls).toHaveLength(0)
+	  })
 
   test("should trigger ultrawork on standalone 'ulw' keyword", async () => {
     // #given - text contains standalone 'ulw'
@@ -310,10 +310,10 @@ describe("keyword-detector word boundary", () => {
       output
     )
 
-    // #then - ultrawork should be triggered
-    expect(output.message.variant).toBe("max")
-    expect(toastCalls).toContain("Ultrawork Mode Activated")
-  })
+	    // #then - ultrawork should be triggered
+	    expect(output.message.variant).toBe("max")
+	    expect(toastCalls).toEqual(["Ultrawork 模式已激活"])
+	  })
 
   test("should NOT trigger ultrawork on file references containing 'ulw' substring", async () => {
     // #given - file reference contains 'ulw' as substring
@@ -332,11 +332,11 @@ describe("keyword-detector word boundary", () => {
       output
     )
 
-    // #then - ultrawork should NOT be triggered
-    expect(output.message.variant).toBeUndefined()
-    expect(toastCalls).not.toContain("Ultrawork Mode Activated")
-  })
-})
+	    // #then - ultrawork should NOT be triggered
+	    expect(output.message.variant).toBeUndefined()
+	    expect(toastCalls).toHaveLength(0)
+	  })
+	})
 
 describe("keyword-detector agent-specific ultrawork messages", () => {
   let logCalls: Array<{ msg: string; data?: unknown }>

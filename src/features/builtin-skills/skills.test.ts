@@ -8,12 +8,12 @@ describe("createBuiltinSkills", () => {
 		// #when
 		const skills = createBuiltinSkills()
 
-		// #then
-		const browserSkill = skills.find((s) => s.name === "playwright")
-		expect(browserSkill).toBeDefined()
-		expect(browserSkill!.description).toContain("browser")
-		expect(browserSkill!.mcpConfig).toHaveProperty("playwright")
-	})
+			// #then
+			const browserSkill = skills.find((s) => s.name === "playwright")
+			expect(browserSkill).toBeDefined()
+			expect(browserSkill!.description).toMatch(/browser|浏览器/i)
+			expect(browserSkill!.mcpConfig).toHaveProperty("playwright")
+		})
 
 	test("returns playwright skill when browserProvider is 'playwright'", () => {
 		// #given
@@ -36,15 +36,15 @@ describe("createBuiltinSkills", () => {
 		// #when
 		const skills = createBuiltinSkills(options)
 
-		// #then
-		const agentBrowserSkill = skills.find((s) => s.name === "agent-browser")
-		const playwrightSkill = skills.find((s) => s.name === "playwright")
-		expect(agentBrowserSkill).toBeDefined()
-		expect(agentBrowserSkill!.description).toContain("browser")
-		expect(agentBrowserSkill!.allowedTools).toContain("Bash(agent-browser:*)")
-		expect(agentBrowserSkill!.template).toContain("agent-browser")
-		expect(playwrightSkill).toBeUndefined()
-	})
+			// #then
+			const agentBrowserSkill = skills.find((s) => s.name === "agent-browser")
+			const playwrightSkill = skills.find((s) => s.name === "playwright")
+			expect(agentBrowserSkill).toBeDefined()
+			expect(agentBrowserSkill!.description).toMatch(/browser|浏览器/i)
+			expect(agentBrowserSkill!.allowedTools).toContain("Bash(agent-browser:*)")
+			expect(agentBrowserSkill!.template).toContain("agent-browser")
+			expect(playwrightSkill).toBeUndefined()
+		})
 
 	test("agent-browser skill template is inlined (not loaded from file)", () => {
 		// #given
