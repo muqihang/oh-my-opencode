@@ -166,7 +166,7 @@ describe("keyword-detector session filtering", () => {
 
     // #then - ultrawork should still work (variant set to max)
     expect(output.message.variant).toBe("max")
-    expect(toastCalls).toContain("Ultrawork Mode Activated")
+    expect(toastCalls).toContain("Ultrawork 模式已激活")
   })
 
   test("should allow all keywords in main session", async () => {
@@ -211,7 +211,7 @@ describe("keyword-detector session filtering", () => {
 
     // #then - all keywords should work
     expect(output.message.variant).toBe("max")
-    expect(toastCalls).toContain("Ultrawork Mode Activated")
+    expect(toastCalls).toContain("Ultrawork 模式已激活")
   })
 
   test("should not override existing variant", async () => {
@@ -233,7 +233,7 @@ describe("keyword-detector session filtering", () => {
 
     // #then - existing variant should remain
     expect(output.message.variant).toBe("low")
-    expect(toastCalls).toContain("Ultrawork Mode Activated")
+    expect(toastCalls).toContain("Ultrawork 模式已激活")
   })
 })
 
