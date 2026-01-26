@@ -102,8 +102,8 @@ describe("TaskToastManager", () => {
       // then - toast should show concurrency info
       expect(mockClient.tui.showToast).toHaveBeenCalledTimes(3)
       const lastCall = mockClient.tui.showToast.mock.calls[2][0]
-      // Should show "Running (3):" header
-      expect(lastCall.body.message).toContain("Running (3):")
+      // Should show "运行中 (3):" header
+      expect(lastCall.body.message).toContain("运行中 (3):")
     })
 
     test("should display concurrency limit info when available", () => {
@@ -150,7 +150,7 @@ describe("TaskToastManager", () => {
       expect(mockClient.tui.showToast).toHaveBeenCalled()
       const call = mockClient.tui.showToast.mock.calls[0][0]
       expect(call.body.message).toContain("frontend-ui-ux")
-      expect(call.body.message).toContain("Running (1):")
+      expect(call.body.message).toContain("运行中 (1):")
     })
   })
 
