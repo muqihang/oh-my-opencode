@@ -792,11 +792,11 @@ Original task: Build something`
         },
       })
 
-      // #then - loop should complete (tool_result contains actual completion output)
-      expect(promptCalls.length).toBe(0)
-      expect(toastCalls.some((t) => t.title === "Ralph Loop Complete!")).toBe(true)
-      expect(hook.getState()).toBeNull()
-    })
+	      // #then - loop should complete (tool_result contains actual completion output)
+	      expect(promptCalls.length).toBe(0)
+	      expect(toastCalls.some((t) => t.title === "Ralph Loop 完成！")).toBe(true)
+	      expect(hook.getState()).toBeNull()
+	    })
 
     test("should check transcript BEFORE API to optimize performance", async () => {
       // #given - transcript has completion promise
@@ -837,11 +837,11 @@ Original task: Build something`
       // #when - idle event triggered
       await hook.event({ event: { type: "session.idle", properties: { sessionID: "test-id" } } })
 
-      // #then - ultrawork toast shown
-      const completionToast = toastCalls.find(t => t.title === "ULTRAWORK LOOP COMPLETE!")
-      expect(completionToast).toBeDefined()
-      expect(completionToast!.message).toMatch(/JUST ULW ULW!/)
-    })
+	      // #then - ultrawork toast shown
+	      const completionToast = toastCalls.find(t => t.title === "ULTRAWORK 循环完成！")
+	      expect(completionToast).toBeDefined()
+	      expect(completionToast!.message).toMatch(/JUST ULW ULW!/)
+	    })
 
     test("should show regular completion toast when ultrawork disabled", async () => {
       // #given - hook without ultrawork
@@ -853,11 +853,11 @@ Original task: Build something`
       hook.startLoop("test-id", "Build API")
 
       // #when - idle event triggered
-      await hook.event({ event: { type: "session.idle", properties: { sessionID: "test-id" } } })
+	      await hook.event({ event: { type: "session.idle", properties: { sessionID: "test-id" } } })
 
-      // #then - regular toast shown
-      expect(toastCalls.some(t => t.title === "Ralph Loop Complete!")).toBe(true)
-    })
+	      // #then - regular toast shown
+	      expect(toastCalls.some(t => t.title === "Ralph Loop 完成！")).toBe(true)
+	    })
 
     test("should prepend ultrawork to continuation prompt when ultrawork=true", async () => {
       // #given - hook with ultrawork mode enabled
