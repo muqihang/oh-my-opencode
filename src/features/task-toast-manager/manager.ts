@@ -123,11 +123,11 @@ export class TaskToastManager {
     }
 
     if (running.length > 0) {
-      lines.push(`Running (${running.length}):${concurrencyInfo}`)
+      lines.push(`运行中 (${running.length}):${concurrencyInfo}`)
       for (const task of running) {
         const duration = this.formatDuration(task.startedAt)
         const bgIcon = task.isBackground ? "[BG]" : "[RUN]"
-        const isNew = task.id === newTask.id ? " ← NEW" : ""
+        const isNew = task.id === newTask.id ? " ← 新" : ""
         const categoryInfo = task.category ? `/${task.category}` : ""
         const skillsInfo = task.skills?.length ? ` [${task.skills.join(", ")}]` : ""
         lines.push(`${bgIcon} ${task.description} (${task.agent}${categoryInfo})${skillsInfo} - ${duration}${isNew}`)
@@ -136,13 +136,13 @@ export class TaskToastManager {
 
     if (queued.length > 0) {
       if (lines.length > 0) lines.push("")
-      lines.push(`Queued (${queued.length}):`)
+      lines.push(`排队中 (${queued.length}):`)
       for (const task of queued) {
         const bgIcon = task.isBackground ? "[Q]" : "[W]"
         const categoryInfo = task.category ? `/${task.category}` : ""
         const skillsInfo = task.skills?.length ? ` [${task.skills.join(", ")}]` : ""
-        const isNew = task.id === newTask.id ? " ← NEW" : ""
-        lines.push(`${bgIcon} ${task.description} (${task.agent}${categoryInfo})${skillsInfo} - Queued${isNew}`)
+        const isNew = task.id === newTask.id ? " ← 新" : ""
+        lines.push(`${bgIcon} ${task.description} (${task.agent}${categoryInfo})${skillsInfo} - 排队中${isNew}`)
       }
     }
 
@@ -162,8 +162,8 @@ export class TaskToastManager {
     const queued = this.getQueuedTasks()
 
     const title = newTask.isBackground
-      ? `New Background Task`
-      : `New Task Executed`
+      ? `新的后台任务`
+      : `新任务已启动`
 
     tuiClient.tui.showToast({
       body: {
@@ -188,14 +188,14 @@ export class TaskToastManager {
     const remaining = this.getRunningTasks()
     const queued = this.getQueuedTasks()
 
-    let message = `"${task.description}" finished in ${task.duration}`
+    let message = `✅ "${task.description}" 完成，用时 ${task.duration}`
     if (remaining.length > 0 || queued.length > 0) {
-      message += `\n\nStill running: ${remaining.length} | Queued: ${queued.length}`
+      message += `\n\n仍在运行: ${remaining.length} | 排队中: ${queued.length}`
     }
 
     tuiClient.tui.showToast({
       body: {
-        title: "Task Completed",
+        title: "任务完成",
         message,
         variant: "success",
         duration: 5000,
