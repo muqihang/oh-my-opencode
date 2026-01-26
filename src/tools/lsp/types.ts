@@ -122,3 +122,43 @@ export interface ResolvedServer {
   env?: Record<string, string>
   initialization?: Record<string, unknown>
 }
+
+export type MarkupKind = "plaintext" | "markdown"
+
+export interface MarkupContent {
+  kind: MarkupKind
+  value: string
+}
+
+export interface MarkedString {
+  language: string
+  value: string
+}
+
+export type HoverContents = MarkupContent | string | MarkedString | Array<MarkupContent | string | MarkedString>
+
+export interface HoverResult {
+  contents: HoverContents
+  range?: Range
+}
+
+export interface Command {
+  title: string
+  command: string
+  arguments?: unknown[]
+}
+
+export interface CodeActionDisabled {
+  reason: string
+}
+
+export interface CodeAction {
+  title: string
+  kind?: string
+  diagnostics?: Diagnostic[]
+  isPreferred?: boolean
+  disabled?: CodeActionDisabled
+  edit?: WorkspaceEdit
+  command?: Command
+  data?: unknown
+}

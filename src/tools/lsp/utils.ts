@@ -5,11 +5,16 @@ import { LSPClient, lspManager } from "./client"
 import { findServerForExtension } from "./config"
 import { SYMBOL_KIND_MAP, SEVERITY_MAP } from "./constants"
 import type {
+  CodeAction,
+  Command,
   Location,
   LocationLink,
   DocumentSymbol,
   SymbolInfo,
   Diagnostic,
+  HoverResult,
+  MarkupContent,
+  MarkedString,
   PrepareRenameResult,
   PrepareRenameDefaultBehavior,
   Range,
@@ -108,6 +113,50 @@ export async function withLspClient<T>(filePath: string, fn: (client: LSPClient)
   } finally {
     lspManager.releaseClient(root, server.id)
   }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null
+}
+
+function isMarkupContent(value: unknown): value is MarkupContent {
+  return isRecord(value) && (value.kind === "markdown" || value.kind === "plaintext") && typeof value.value === "string"
+}
+
+function isMarkedString(value: unknown): value is MarkedString {
+  return isRecord(value) && typeof value.language === "string" && typeof value.value === "string"
+}
+
+function formatHoverContents(contents: HoverResult["contents"]): string {
+  if (typeof contents === "string") return contents
+  if (isMarkupContent(contents)) return contents.value
+  if (isMarkedString(contents)) return ["```" + contents.language, contents.value, "```"].join("\n")
+
+  if (Array.isArray(contents)) {
+    const parts = contents
+      .map((item) => {
+        if (typeof item === "string") return item
+        if (isMarkupContent(item)) return item.value
+        if (isMarkedString(item)) return ["```" + item.language, item.value, "```"].join("\n")
+        return ""
+      })
+      .filter((p) => p.trim().length > 0)
+
+    return parts.length > 0 ? parts.join("\n\n") : "无 Hover 信息"
+  }
+
+  return "无 Hover 信息"
+}
+
+export function formatHoverResult(result: HoverResult | null): string {
+  if (!result) return "无 Hover 信息"
+
+  const content = formatHoverContents(result.contents)
+  if (!result.range) return content
+
+  const line = result.range.start.line + 1
+  const character = result.range.start.character
+  return `${content}\n\n(范围：${line}:${character})`
 }
 
 export function formatLocation(loc: Location | LocationLink): string {
@@ -213,6 +262,30 @@ export function formatPrepareRenameResult(
   }
 
   return "Cannot rename at this position"
+}
+
+function isCommand(item: CodeAction | Command): item is Command {
+  return isRecord(item) && typeof item.command === "string"
+}
+
+export function formatCodeActions(result: Array<CodeAction | Command> | null): string {
+  if (!result || result.length === 0) return "未找到代码操作"
+
+  const lines: string[] = []
+  lines.push(`共找到 ${result.length} 个代码操作：`)
+
+  for (const [index, item] of result.entries()) {
+    const position = index + 1
+    if (isCommand(item)) {
+      lines.push(`[${position}] 命令：${item.title} (${item.command}) :: ${JSON.stringify(item)}`)
+      continue
+    }
+
+    const kind = item.kind ? ` kind=${item.kind}` : ""
+    lines.push(`[${position}] ${item.title}${kind} :: ${JSON.stringify(item)}`)
+  }
+
+  return lines.join("\n")
 }
 
 export function formatTextEdit(edit: TextEdit): string {
