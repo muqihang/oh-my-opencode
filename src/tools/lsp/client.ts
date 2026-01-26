@@ -509,6 +509,15 @@ export class LSPClient {
     await new Promise((r) => setTimeout(r, 1000))
   }
 
+  async hover(filePath: string, line: number, character: number): Promise<unknown> {
+    const absPath = resolve(filePath)
+    await this.openFile(absPath)
+    return this.send("textDocument/hover", {
+      textDocument: { uri: pathToFileURL(absPath).href },
+      position: { line: line - 1, character },
+    })
+  }
+
   async definition(filePath: string, line: number, character: number): Promise<unknown> {
     const absPath = resolve(filePath)
     await this.openFile(absPath)
@@ -534,6 +543,33 @@ export class LSPClient {
     return this.send("textDocument/documentSymbol", {
       textDocument: { uri: pathToFileURL(absPath).href },
     })
+  }
+
+  async codeAction(
+    filePath: string,
+    startLine: number,
+    startCharacter: number,
+    endLine: number,
+    endCharacter: number,
+    only?: string[]
+  ): Promise<unknown> {
+    const absPath = resolve(filePath)
+    await this.openFile(absPath)
+    return this.send("textDocument/codeAction", {
+      textDocument: { uri: pathToFileURL(absPath).href },
+      range: {
+        start: { line: startLine - 1, character: startCharacter },
+        end: { line: endLine - 1, character: endCharacter },
+      },
+      context: {
+        diagnostics: [],
+        only,
+      },
+    })
+  }
+
+  async codeActionResolve(codeAction: unknown): Promise<unknown> {
+    return this.send("codeAction/resolve", codeAction)
   }
 
   async workspaceSymbols(query: string): Promise<unknown> {
