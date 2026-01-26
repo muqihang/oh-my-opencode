@@ -81,8 +81,8 @@ export function createKeywordDetectorHook(ctx: PluginInput, _collector?: Context
         ctx.client.tui
           .showToast({
             body: {
-              title: "Ultrawork Mode Activated",
-              message: "Maximum precision engaged. All agents at your disposal.",
+              title: "Ultrawork 模式已激活",
+              message: "最高精度已启用，所有代理待命。",
               variant: "success" as const,
               duration: 3000,
             },
