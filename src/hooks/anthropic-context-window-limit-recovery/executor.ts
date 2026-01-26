@@ -210,8 +210,8 @@ async function fixEmptyMessages(
       await client.tui
         .showToast({
           body: {
-            title: "Empty Content Error",
-            message: "No empty messages found in storage. Cannot auto-recover.",
+            title: "空内容错误",
+            message: "存储中未找到空消息，无法自动恢复。",
             variant: "error",
             duration: 5000,
           },
@@ -243,8 +243,8 @@ async function fixEmptyMessages(
     await client.tui
       .showToast({
         body: {
-          title: "Session Recovery",
-          message: `Fixed ${fixedMessageIds.length} empty message(s). Retrying...`,
+          title: "会话恢复",
+          message: `已修复 ${fixedMessageIds.length} 条空消息，正在重试...`,
           variant: "warning",
           duration: 3000,
         },
@@ -268,9 +268,9 @@ export async function executeCompact(
     await (client as Client).tui
       .showToast({
         body: {
-          title: "Compact In Progress",
+          title: "正在压缩",
           message:
-            "Recovery already running. Please wait or start new session if stuck.",
+            "恢复已在进行，请稍候；若卡住请新建会话。",
           variant: "warning",
           duration: 5000,
         },
@@ -315,15 +315,15 @@ export async function executeCompact(
           .map((t) => t.toolName)
           .join(", ");
         const statusMsg = aggressiveResult.sufficient
-          ? `Truncated ${aggressiveResult.truncatedCount} outputs (${formatBytes(aggressiveResult.totalBytesRemoved)})`
-          : `Truncated ${aggressiveResult.truncatedCount} outputs (${formatBytes(aggressiveResult.totalBytesRemoved)}) - continuing to summarize...`;
+          ? `已截断 ${aggressiveResult.truncatedCount} 个输出 (${formatBytes(aggressiveResult.totalBytesRemoved)})`
+          : `已截断 ${aggressiveResult.truncatedCount} 个输出 (${formatBytes(aggressiveResult.totalBytesRemoved)}) - 继续摘要...`;
 
         await (client as Client).tui
           .showToast({
             body: {
               title: aggressiveResult.sufficient
-                ? "Truncation Complete"
-                : "Partial Truncation",
+                ? "截断完成"
+                : "部分截断",
               message: `${statusMsg}: ${toolNames}`,
               variant: aggressiveResult.sufficient ? "success" : "warning",
               duration: 4000,
@@ -389,9 +389,9 @@ export async function executeCompact(
         await (client as Client).tui
           .showToast({
             body: {
-              title: "Recovery Failed",
+              title: "恢复失败",
               message:
-                "Max recovery attempts (3) reached for empty content error. Please start a new session.",
+                "空内容错误已达到最大恢复次数 (3)，请新建会话。",
               variant: "error",
               duration: 10000,
             },
@@ -420,8 +420,8 @@ export async function executeCompact(
           await (client as Client).tui
             .showToast({
               body: {
-                title: "Auto Compact",
-                message: `Summarizing session (attempt ${retryState.attempt}/${RETRY_CONFIG.maxAttempts})...`,
+                title: "自动压缩",
+                message: `正在总结会话（尝试 ${retryState.attempt}/${RETRY_CONFIG.maxAttempts}）...`,
                 variant: "warning",
                 duration: 3000,
               },
@@ -457,8 +457,8 @@ export async function executeCompact(
         await (client as Client).tui
           .showToast({
             body: {
-              title: "Summarize Skipped",
-              message: "Missing providerID or modelID.",
+              title: "已跳过摘要",
+              message: "缺少 providerID 或 modelID。",
               variant: "warning",
               duration: 3000,
             },
@@ -472,8 +472,8 @@ export async function executeCompact(
     await (client as Client).tui
       .showToast({
         body: {
-          title: "Auto Compact Failed",
-          message: "All recovery attempts failed. Please start a new session.",
+          title: "自动压缩失败",
+          message: "所有恢复尝试均失败，请新建会话。",
           variant: "error",
           duration: 5000,
         },

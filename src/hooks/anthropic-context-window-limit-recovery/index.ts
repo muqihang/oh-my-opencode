@@ -62,8 +62,8 @@ export function createAnthropicContextWindowLimitRecoveryHook(ctx: PluginInput, 
         await ctx.client.tui
           .showToast({
             body: {
-              title: "Context Limit Hit",
-              message: "Truncating large tool outputs and recovering...",
+              title: "达到上下文上限",
+              message: "正在截断大型工具输出并尝试恢复...",
               variant: "warning" as const,
               duration: 3000,
             },
@@ -122,8 +122,8 @@ export function createAnthropicContextWindowLimitRecoveryHook(ctx: PluginInput, 
       await ctx.client.tui
         .showToast({
           body: {
-            title: "Auto Compact",
-            message: "Token limit exceeded. Attempting recovery...",
+            title: "自动压缩",
+            message: "Token 上限已超出，正在尝试恢复...",
             variant: "warning" as const,
             duration: 3000,
           },
