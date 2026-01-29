@@ -1,17 +1,18 @@
 import { describe, test, expect } from "bun:test"
 import { resolveCategoryConfig, createConfigHandler } from "./config-handler"
+import type { ConfigHandlerOverrides } from "./config-handler"
 import type { CategoryConfig } from "../config/schema"
 import type { OhMyOpenCodeConfig } from "../config"
 
 const testOverrides = {
   createBuiltinAgents: async () => ({
-    sisyphus: { name: "sisyphus", prompt: "test", mode: "primary" },
-    oracle: { name: "oracle", prompt: "test", mode: "subagent" },
+    sisyphus: { name: "sisyphus", prompt: "test", mode: "primary" as const },
+    oracle: { name: "oracle", prompt: "test", mode: "subagent" as const },
   }),
   createSisyphusJuniorAgentWithOverrides: () => ({
     name: "sisyphus-junior",
     prompt: "test",
-    mode: "subagent",
+    mode: "subagent" as const,
   }),
   loadAllPluginComponents: async () => ({
     commands: {},
@@ -22,12 +23,12 @@ const testOverrides = {
     plugins: [],
     errors: [],
   }),
-  loadMcpConfigs: async () => ({ servers: {} }),
+  loadMcpConfigs: async () => ({ servers: {}, loadedServers: [] }),
   createBuiltinMcps: () => ({}),
   log: () => {},
   migrateAgentConfig: (config: Record<string, unknown>) => config,
   AGENT_NAME_MAP: {},
-  resolveModelWithFallback: () => ({ model: "anthropic/claude-opus-4-5" }),
+  resolveModelWithFallback: () => ({ model: "anthropic/claude-opus-4-5", source: "override" as const }),
   loadBuiltinCommands: () => ({}),
   loadUserCommands: async () => ({}),
   loadProjectCommands: async () => ({}),
@@ -43,7 +44,7 @@ const testOverrides = {
   discoverOpencodeProjectSkills: async () => [],
   loadUserAgents: () => ({}),
   loadProjectAgents: () => ({}),
-}
+} satisfies Partial<ConfigHandlerOverrides>
 
 describe("Plan agent demote behavior", () => {
   test("plan agent should be demoted to subagent mode when replacePlan is true", async () => {
