@@ -27,7 +27,7 @@ export async function runCheck(check: CheckDefinition): Promise<CheckResult> {
     return {
       name: check.name,
       status: "fail",
-      message: err instanceof Error ? err.message : "Unknown error",
+      message: err instanceof Error ? err.message : "未知错误",
       duration: Math.round(performance.now() - start),
     }
   }

@@ -45,23 +45,23 @@ export async function checkLspServers(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.LSP_SERVERS],
       status: "warn",
-      message: "No LSP servers detected",
+      message: "未检测到 LSP 服务器",
       details: [
-        "LSP tools will have limited functionality",
-        ...missingServers.map((s) => `Missing: ${s.id}`),
+        "LSP 工具功能将受限",
+        ...missingServers.map((s) => `缺少：${s.id}`),
       ],
     }
   }
 
   const details = [
-    ...installedServers.map((s) => `Installed: ${s.id}`),
-    ...missingServers.map((s) => `Not found: ${s.id} (optional)`),
+    ...installedServers.map((s) => `已安装：${s.id}`),
+    ...missingServers.map((s) => `未找到：${s.id}（可选）`),
   ]
 
   return {
     name: CHECK_NAMES[CHECK_IDS.LSP_SERVERS],
     status: "pass",
-    message: `${stats.installed}/${stats.total} servers available`,
+    message: `可用服务器：${stats.installed}/${stats.total}`,
     details,
   }
 }

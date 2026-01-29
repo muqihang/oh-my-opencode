@@ -13,7 +13,7 @@ export async function checkCompletionConditions(ctx: RunContext): Promise<boolea
 
     return true
   } catch (err) {
-    console.error(pc.red(`[completion] API error: ${err}`))
+    console.error(pc.red(`[完成检查] API 错误：${err}`))
     return false
   }
 }
@@ -27,7 +27,7 @@ async function areAllTodosComplete(ctx: RunContext): Promise<boolean> {
   )
 
   if (incompleteTodos.length > 0) {
-    console.log(pc.dim(`  Waiting: ${incompleteTodos.length} todos remaining`))
+    console.log(pc.dim(`  等待中：剩余 ${incompleteTodos.length} 个 TODO`))
     return false
   }
 
@@ -60,7 +60,7 @@ async function areAllDescendantsIdle(
     const status = allStatuses[child.id]
     if (status && status.type !== "idle") {
       console.log(
-        pc.dim(`  Waiting: session ${child.id.slice(0, 8)}... is ${status.type}`)
+        pc.dim(`  等待中：会话 ${child.id.slice(0, 8)}... 状态为 ${status.type}`)
       )
       return false
     }

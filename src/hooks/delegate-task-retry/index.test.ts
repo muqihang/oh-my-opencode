@@ -89,7 +89,7 @@ describe("sisyphus-task-retry", () => {
       const guidance = buildRetryGuidance(errorInfo)
       
       expect(guidance).toContain("run_in_background")
-      expect(guidance).toContain("REQUIRED")
+      expect(guidance).toContain("需要立即重试")
     })
 
     it("should provide fix for unknown category with available list", () => {

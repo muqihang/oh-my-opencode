@@ -16,10 +16,10 @@ async function* toAsyncIterable<T>(items: T[]): AsyncIterable<T> {
 }
 
 describe("serializeError", () => {
-  it("returns 'Unknown error' for null/undefined", () => {
+  it("returns '未知错误' for null/undefined", () => {
     // #given / #when / #then
-    expect(serializeError(null)).toBe("Unknown error")
-    expect(serializeError(undefined)).toBe("Unknown error")
+    expect(serializeError(null)).toBe("未知错误")
+    expect(serializeError(undefined)).toBe("未知错误")
   })
 
   it("returns message from Error instance", () => {

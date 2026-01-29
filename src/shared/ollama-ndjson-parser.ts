@@ -94,7 +94,7 @@ export function parseOllamaStreamResponse(response: string): OllamaMergedRespons
   const lines = response.split("\n").filter((line) => line.trim())
 
   if (lines.length === 0) {
-    throw new Error("No valid NDJSON lines found in response")
+    throw new Error("响应中未找到有效的 NDJSON 行")
   }
 
   const mergedMessage: OllamaMessage = {

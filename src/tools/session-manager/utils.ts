@@ -3,7 +3,7 @@ import { getSessionInfo, readSessionMessages } from "./storage"
 
 export async function formatSessionList(sessionIDs: string[]): Promise<string> {
   if (sessionIDs.length === 0) {
-    return "No sessions found."
+    return "未找到会话。"
   }
 
   const infos = (await Promise.all(sessionIDs.map((id) => getSessionInfo(id)))).filter(
@@ -11,16 +11,16 @@ export async function formatSessionList(sessionIDs: string[]): Promise<string> {
   )
 
   if (infos.length === 0) {
-    return "No valid sessions found."
+    return "未找到有效会话。"
   }
 
-  const headers = ["Session ID", "Messages", "First", "Last", "Agents"]
+  const headers = ["会话 ID", "消息数", "最早", "最新", "代理"]
   const rows = infos.map((info) => [
     info.id,
     info.message_count.toString(),
     info.first_message?.toISOString().split("T")[0] ?? "N/A",
     info.last_message?.toISOString().split("T")[0] ?? "N/A",
-    info.agents_used.join(", ") || "none",
+    info.agents_used.join(", ") || "无",
   ])
 
   const colWidths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => r[i].length)))
@@ -47,13 +47,13 @@ export function formatSessionMessages(
   todos?: Array<{ id: string; content: string; status: string }>
 ): string {
   if (messages.length === 0) {
-    return "No messages found in this session."
+    return "此会话中未找到消息。"
   }
 
   const lines: string[] = []
 
   for (const msg of messages) {
-    const timestamp = msg.time?.created ? new Date(msg.time.created).toISOString() : "Unknown time"
+    const timestamp = msg.time?.created ? new Date(msg.time.created).toISOString() : "未知时间"
     const agent = msg.agent ? ` (${msg.agent})` : ""
     lines.push(`\n[${msg.role}${agent}] ${timestamp}`)
 
@@ -61,19 +61,19 @@ export function formatSessionMessages(
       if (part.type === "text" && part.text) {
         lines.push(part.text.trim())
       } else if (part.type === "thinking" && part.thinking) {
-        lines.push(`[thinking] ${part.thinking.substring(0, 200)}...`)
+        lines.push(`[思考] ${part.thinking.substring(0, 200)}...`)
       } else if ((part.type === "tool_use" || part.type === "tool") && part.tool) {
         const input = part.input ? JSON.stringify(part.input).substring(0, 100) : ""
-        lines.push(`[tool: ${part.tool}] ${input}`)
+        lines.push(`[工具: ${part.tool}] ${input}`)
       } else if (part.type === "tool_result") {
         const output = part.output ? part.output.substring(0, 200) : ""
-        lines.push(`[tool result] ${output}...`)
+        lines.push(`[工具结果] ${output}...`)
       }
     }
   }
 
   if (includeTodos && todos && todos.length > 0) {
-    lines.push("\n\n=== Todos ===")
+    lines.push("\n\n=== TODO ===")
     for (const todo of todos) {
       const status = todo.status === "completed" ? "[x]" : todo.status === "in_progress" ? "[-]" : "[ ]"
       lines.push(`${status} [${todo.status}] ${todo.content}`)
@@ -85,12 +85,12 @@ export function formatSessionMessages(
 
 export function formatSessionInfo(info: SessionInfo): string {
   const lines = [
-    `Session ID: ${info.id}`,
-    `Messages: ${info.message_count}`,
-    `Date Range: ${info.first_message?.toISOString() ?? "N/A"} to ${info.last_message?.toISOString() ?? "N/A"}`,
-    `Agents Used: ${info.agents_used.join(", ") || "none"}`,
-    `Has Todos: ${info.has_todos ? `Yes (${info.todos?.length ?? 0} items)` : "No"}`,
-    `Has Transcript: ${info.has_transcript ? `Yes (${info.transcript_entries} entries)` : "No"}`,
+    `会话 ID: ${info.id}`,
+    `消息数: ${info.message_count}`,
+    `时间范围: ${info.first_message?.toISOString() ?? "N/A"} 到 ${info.last_message?.toISOString() ?? "N/A"}`,
+    `使用的代理: ${info.agents_used.join(", ") || "无"}`,
+    `包含 TODO: ${info.has_todos ? `是（${info.todos?.length ?? 0} 项）` : "否"}`,
+    `包含转录: ${info.has_transcript ? `是（${info.transcript_entries} 条）` : "否"}`,
   ]
 
   if (info.first_message && info.last_message) {
@@ -98,7 +98,7 @@ export function formatSessionInfo(info: SessionInfo): string {
     const days = Math.floor(duration / (1000 * 60 * 60 * 24))
     const hours = Math.floor((duration % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
     if (days > 0 || hours > 0) {
-      lines.push(`Duration: ${days} days, ${hours} hours`)
+      lines.push(`耗时: ${days} 天 ${hours} 小时`)
     }
   }
 
@@ -107,16 +107,16 @@ export function formatSessionInfo(info: SessionInfo): string {
 
 export function formatSearchResults(results: SearchResult[]): string {
   if (results.length === 0) {
-    return "No matches found."
+    return "未找到匹配项。"
   }
 
-  const lines: string[] = [`Found ${results.length} matches:\n`]
+  const lines: string[] = [`找到 ${results.length} 条匹配：\n`]
 
   for (const result of results) {
     const timestamp = result.timestamp ? new Date(result.timestamp).toISOString() : ""
     lines.push(`[${result.session_id}] ${result.message_id} (${result.role}) ${timestamp}`)
     lines.push(`  ${result.excerpt}`)
-    lines.push(`  Matches: ${result.match_count}\n`)
+    lines.push(`  匹配次数：${result.match_count}\n`)
   }
 
   return lines.join("\n")

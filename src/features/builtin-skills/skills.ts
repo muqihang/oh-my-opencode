@@ -6,7 +6,7 @@ const playwrightSkill: BuiltinSkill = {
   description: "必须用于任何浏览器相关任务。通过 Playwright MCP 进行浏览器自动化 - 验证、浏览、信息收集、网页抓取、测试、截图以及所有浏览器交互。",
   template: `# Playwright Browser Automation (Playwright 浏览器自动化)
 
-This skill provides browser automation capabilities via the Playwright MCP server.`,
+本技能通过 Playwright MCP 服务器提供浏览器自动化能力。`,
   mcpConfig: {
     playwright: {
       command: "npx",
@@ -17,122 +17,123 @@ This skill provides browser automation capabilities via the Playwright MCP serve
 
 const agentBrowserSkill: BuiltinSkill = {
   name: "agent-browser",
-  description: "MUST USE for any browser-related tasks. Browser automation via agent-browser CLI - verification, browsing, information gathering, web scraping, testing, screenshots, and all browser interactions.",
-  template: `# Browser Automation with agent-browser
+  description:
+    "必须用于任何浏览器相关任务。通过 agent-browser CLI 进行浏览器自动化 - 验证、浏览、信息收集、网页抓取、测试、截图以及所有浏览器交互。",
+  template: `# Browser Automation with agent-browser（使用 agent-browser 进行浏览器自动化）
 
-## Quick start
+## Quick start（快速开始）
 
 \`\`\`bash
-agent-browser open <url>        # Navigate to page
-agent-browser snapshot -i       # Get interactive elements with refs
-agent-browser click @e1         # Click element by ref
-agent-browser fill @e2 "text"   # Fill input by ref
-agent-browser close             # Close browser
+agent-browser open <url>        # 打开页面
+agent-browser snapshot -i       # 获取可交互元素（带 ref 引用）
+agent-browser click @e1         # 通过 ref 点击元素
+agent-browser fill @e2 "text"   # 通过 ref 填写输入框
+agent-browser close             # 关闭浏览器
 \`\`\`
 
-## Core workflow
+## Core workflow（核心流程）
 
-1. Navigate: \`agent-browser open <url>\`
-2. Snapshot: \`agent-browser snapshot -i\` (returns elements with refs like \`@e1\`, \`@e2\`)
-3. Interact using refs from the snapshot
-4. Re-snapshot after navigation or significant DOM changes
+1. 导航：\`agent-browser open <url>\`
+2. 快照：\`agent-browser snapshot -i\`（返回带 ref 的元素，如 \`@e1\`、\`@e2\`）
+3. 使用快照返回的 ref 进行交互
+4. 导航或发生重要 DOM 变化后重新 snapshot
 
-## Commands
+## Commands（命令）
 
-### Navigation
+### Navigation（导航）
 \`\`\`bash
-agent-browser open <url>      # Navigate to URL
-agent-browser back            # Go back
-agent-browser forward         # Go forward
-agent-browser reload          # Reload page
-agent-browser close           # Close browser
+agent-browser open <url>      # 打开 URL
+agent-browser back            # 后退
+agent-browser forward         # 前进
+agent-browser reload          # 刷新页面
+agent-browser close           # 关闭浏览器
 \`\`\`
 
-### Snapshot (page analysis)
+### Snapshot (page analysis)（页面分析）
 \`\`\`bash
-agent-browser snapshot            # Full accessibility tree
-agent-browser snapshot -i         # Interactive elements only (recommended)
-agent-browser snapshot -c         # Compact output
-agent-browser snapshot -d 3       # Limit depth to 3
-agent-browser snapshot -s "#main" # Scope to CSS selector
+agent-browser snapshot            # 完整无障碍树
+agent-browser snapshot -i         # 仅可交互元素（推荐）
+agent-browser snapshot -c         # 紧凑输出
+agent-browser snapshot -d 3       # 深度限制为 3
+agent-browser snapshot -s "#main" # 限定到 CSS 选择器范围
 \`\`\`
 
-### Interactions (use @refs from snapshot)
+### Interactions (use @refs from snapshot)（交互：使用 snapshot 中的 @ref）
 \`\`\`bash
-agent-browser click @e1           # Click
-agent-browser dblclick @e1        # Double-click
-agent-browser focus @e1           # Focus element
-agent-browser fill @e2 "text"     # Clear and type
-agent-browser type @e2 "text"     # Type without clearing
-agent-browser press Enter         # Press key
-agent-browser press Control+a     # Key combination
-agent-browser keydown Shift       # Hold key down
-agent-browser keyup Shift         # Release key
-agent-browser hover @e1           # Hover
-agent-browser check @e1           # Check checkbox
-agent-browser uncheck @e1         # Uncheck checkbox
-agent-browser select @e1 "value"  # Select dropdown
-agent-browser scroll down 500     # Scroll page
-agent-browser scrollintoview @e1  # Scroll element into view
-agent-browser drag @e1 @e2        # Drag and drop
-agent-browser upload @e1 file.pdf # Upload files
+agent-browser click @e1           # 点击
+agent-browser dblclick @e1        # 双击
+agent-browser focus @e1           # 聚焦元素
+agent-browser fill @e2 "text"     # 清空后输入
+agent-browser type @e2 "text"     # 直接输入（不清空）
+agent-browser press Enter         # 按键
+agent-browser press Control+a     # 组合键
+agent-browser keydown Shift       # 按住按键
+agent-browser keyup Shift         # 松开按键
+agent-browser hover @e1           # 悬停
+agent-browser check @e1           # 勾选复选框
+agent-browser uncheck @e1         # 取消勾选复选框
+agent-browser select @e1 "value"  # 选择下拉项
+agent-browser scroll down 500     # 滚动页面
+agent-browser scrollintoview @e1  # 将元素滚动到可视区域
+agent-browser drag @e1 @e2        # 拖拽
+agent-browser upload @e1 file.pdf # 上传文件
 \`\`\`
 
-### Get information
+### Get information（获取信息）
 \`\`\`bash
-agent-browser get text @e1        # Get element text
-agent-browser get html @e1        # Get innerHTML
-agent-browser get value @e1       # Get input value
-agent-browser get attr @e1 href   # Get attribute
-agent-browser get title           # Get page title
-agent-browser get url             # Get current URL
-agent-browser get count ".item"   # Count matching elements
-agent-browser get box @e1         # Get bounding box
+agent-browser get text @e1        # 获取元素文本
+agent-browser get html @e1        # 获取 innerHTML
+agent-browser get value @e1       # 获取输入框值
+agent-browser get attr @e1 href   # 获取属性
+agent-browser get title           # 获取页面标题
+agent-browser get url             # 获取当前 URL
+agent-browser get count ".item"   # 统计匹配元素数量
+agent-browser get box @e1         # 获取边界框
 \`\`\`
 
-### Check state
+### Check state（检查状态）
 \`\`\`bash
-agent-browser is visible @e1      # Check if visible
-agent-browser is enabled @e1      # Check if enabled
-agent-browser is checked @e1      # Check if checked
+agent-browser is visible @e1      # 是否可见
+agent-browser is enabled @e1      # 是否可用
+agent-browser is checked @e1      # 是否已勾选
 \`\`\`
 
-### Screenshots & PDF
+### Screenshots & PDF（截图与 PDF）
 \`\`\`bash
-agent-browser screenshot          # Screenshot to stdout
-agent-browser screenshot path.png # Save to file
-agent-browser screenshot --full   # Full page
-agent-browser pdf output.pdf      # Save as PDF
+agent-browser screenshot          # 输出截图到 stdout
+agent-browser screenshot path.png # 保存到文件
+agent-browser screenshot --full   # 整页截图
+agent-browser pdf output.pdf      # 保存为 PDF
 \`\`\`
 
-### Video recording
+### Video recording（视频录制）
 \`\`\`bash
-agent-browser record start ./demo.webm    # Start recording (uses current URL + state)
-agent-browser click @e1                   # Perform actions
-agent-browser record stop                 # Stop and save video
-agent-browser record restart ./take2.webm # Stop current + start new recording
+agent-browser record start ./demo.webm    # 开始录制（使用当前 URL + 状态）
+agent-browser click @e1                   # 执行动作
+agent-browser record stop                 # 停止并保存视频
+agent-browser record restart ./take2.webm # 停止当前录制并开始新录制
 \`\`\`
-Recording creates a fresh context but preserves cookies/storage from your session.
+录制会创建一个新的上下文，但会保留你会话的 cookies/storage。
 
-### Wait
+### Wait（等待）
 \`\`\`bash
-agent-browser wait @e1                     # Wait for element
-agent-browser wait 2000                    # Wait milliseconds
-agent-browser wait --text "Success"        # Wait for text
-agent-browser wait --url "**/dashboard"    # Wait for URL pattern
-agent-browser wait --load networkidle      # Wait for network idle
-agent-browser wait --fn "window.ready"     # Wait for JS condition
+agent-browser wait @e1                     # 等待元素
+agent-browser wait 2000                    # 等待毫秒数
+agent-browser wait --text "Success"        # 等待文本出现
+agent-browser wait --url "**/dashboard"    # 等待 URL 匹配
+agent-browser wait --load networkidle      # 等待网络空闲
+agent-browser wait --fn "window.ready"     # 等待 JS 条件
 \`\`\`
 
-### Mouse control
+### Mouse control（鼠标控制）
 \`\`\`bash
-agent-browser mouse move 100 200      # Move mouse
-agent-browser mouse down left         # Press button
-agent-browser mouse up left           # Release button
-agent-browser mouse wheel 100         # Scroll wheel
+agent-browser mouse move 100 200      # 移动鼠标
+agent-browser mouse down left         # 按下按钮
+agent-browser mouse up left           # 松开按钮
+agent-browser mouse wheel 100         # 滚动滚轮
 \`\`\`
 
-### Semantic locators (alternative to refs)
+### Semantic locators (alternative to refs)（语义定位：@ref 的替代方案）
 \`\`\`bash
 agent-browser find role button click --name "Submit"
 agent-browser find text "Sign In" click
@@ -141,104 +142,104 @@ agent-browser find first ".item" click
 agent-browser find nth 2 "a" text
 \`\`\`
 
-### Browser settings
+### Browser settings（浏览器设置）
 \`\`\`bash
-agent-browser set viewport 1920 1080      # Set viewport size
-agent-browser set device "iPhone 14"      # Emulate device
-agent-browser set geo 37.7749 -122.4194   # Set geolocation
-agent-browser set offline on              # Toggle offline mode
-agent-browser set headers '{"X-Key":"v"}' # Extra HTTP headers
-agent-browser set credentials user pass   # HTTP basic auth
-agent-browser set media dark              # Emulate color scheme
+agent-browser set viewport 1920 1080      # 设置视口大小
+agent-browser set device "iPhone 14"      # 模拟设备
+agent-browser set geo 37.7749 -122.4194   # 设置地理位置
+agent-browser set offline on              # 切换离线模式
+agent-browser set headers '{"X-Key":"v"}' # 额外 HTTP Header
+agent-browser set credentials user pass   # HTTP Basic Auth
+agent-browser set media dark              # 模拟配色方案
 \`\`\`
 
-### Cookies & Storage
+### Cookies & Storage（Cookies 与存储）
 \`\`\`bash
-agent-browser cookies                     # Get all cookies
-agent-browser cookies set name value      # Set cookie
-agent-browser cookies clear               # Clear cookies
-agent-browser storage local               # Get all localStorage
-agent-browser storage local key           # Get specific key
-agent-browser storage local set k v       # Set value
-agent-browser storage local clear         # Clear all
-agent-browser storage session             # Get all sessionStorage
-agent-browser storage session key         # Get specific key
-agent-browser storage session set k v     # Set value
-agent-browser storage session clear       # Clear all
+agent-browser cookies                     # 获取全部 cookies
+agent-browser cookies set name value      # 设置 cookie
+agent-browser cookies clear               # 清空 cookies
+agent-browser storage local               # 获取全部 localStorage
+agent-browser storage local key           # 获取指定 key
+agent-browser storage local set k v       # 设置值
+agent-browser storage local clear         # 全部清空
+agent-browser storage session             # 获取全部 sessionStorage
+agent-browser storage session key         # 获取指定 key
+agent-browser storage session set k v     # 设置值
+agent-browser storage session clear       # 全部清空
 \`\`\`
 
-### Network
+### Network（网络）
 \`\`\`bash
-agent-browser network route <url>              # Intercept requests
-agent-browser network route <url> --abort      # Block requests
-agent-browser network route <url> --body '{}'  # Mock response
-agent-browser network unroute [url]            # Remove routes
-agent-browser network requests                 # View tracked requests
-agent-browser network requests --filter api    # Filter requests
+agent-browser network route <url>              # 拦截请求
+agent-browser network route <url> --abort      # 阻止请求
+agent-browser network route <url> --body '{}'  # Mock 响应
+agent-browser network unroute [url]            # 移除 route
+agent-browser network requests                 # 查看已跟踪请求
+agent-browser network requests --filter api    # 过滤请求
 \`\`\`
 
-### Tabs & Windows
+### Tabs & Windows（标签页与窗口）
 \`\`\`bash
-agent-browser tab                 # List tabs
-agent-browser tab new [url]       # New tab
-agent-browser tab 2               # Switch to tab
-agent-browser tab close           # Close tab
-agent-browser window new          # New window
+agent-browser tab                 # 列出标签页
+agent-browser tab new [url]       # 新建标签页
+agent-browser tab 2               # 切换到标签页
+agent-browser tab close           # 关闭标签页
+agent-browser window new          # 新建窗口
 \`\`\`
 
-### Frames
+### Frames（Frame/iframe）
 \`\`\`bash
-agent-browser frame "#iframe"     # Switch to iframe
-agent-browser frame main          # Back to main frame
+agent-browser frame "#iframe"     # 切换到 iframe
+agent-browser frame main          # 回到主 frame
 \`\`\`
 
-### Dialogs
+### Dialogs（对话框）
 \`\`\`bash
-agent-browser dialog accept [text]  # Accept dialog
-agent-browser dialog dismiss        # Dismiss dialog
+agent-browser dialog accept [text]  # 接受对话框
+agent-browser dialog dismiss        # 关闭对话框
 \`\`\`
 
 ### JavaScript
 \`\`\`bash
-agent-browser eval "document.title"   # Run JavaScript
+agent-browser eval "document.title"   # 执行 JavaScript
 \`\`\`
 
-## Global Options
+## Global Options（全局选项）
 
-| Option | Description |
+| Option（选项） | Description（说明） |
 |--------|-------------|
-| \`--session <name>\` | Isolated browser session (\`AGENT_BROWSER_SESSION\` env) |
-| \`--profile <path>\` | Persistent browser profile (\`AGENT_BROWSER_PROFILE\` env) |
-| \`--headers <json>\` | HTTP headers scoped to URL's origin |
-| \`--executable-path <path>\` | Custom browser binary (\`AGENT_BROWSER_EXECUTABLE_PATH\` env) |
-| \`--args <args>\` | Browser launch args (\`AGENT_BROWSER_ARGS\` env) |
-| \`--user-agent <ua>\` | Custom User-Agent (\`AGENT_BROWSER_USER_AGENT\` env) |
-| \`--proxy <url>\` | Proxy server (\`AGENT_BROWSER_PROXY\` env) |
-| \`--proxy-bypass <hosts>\` | Hosts to bypass proxy (\`AGENT_BROWSER_PROXY_BYPASS\` env) |
-| \`-p, --provider <name>\` | Cloud browser provider (\`AGENT_BROWSER_PROVIDER\` env) |
-| \`--json\` | Machine-readable JSON output |
-| \`--headed\` | Show browser window (not headless) |
-| \`--cdp <port\\|wss://url>\` | Connect via Chrome DevTools Protocol |
-| \`--debug\` | Debug output |
+| \`--session <name>\` | 隔离的浏览器 session（环境变量：\`AGENT_BROWSER_SESSION\`） |
+| \`--profile <path>\` | 持久化浏览器 profile（环境变量：\`AGENT_BROWSER_PROFILE\`） |
+| \`--headers <json>\` | 仅对目标 URL 的 origin 生效的 HTTP Header |
+| \`--executable-path <path>\` | 自定义浏览器二进制路径（环境变量：\`AGENT_BROWSER_EXECUTABLE_PATH\`） |
+| \`--args <args>\` | 浏览器启动参数（环境变量：\`AGENT_BROWSER_ARGS\`） |
+| \`--user-agent <ua>\` | 自定义 User-Agent（环境变量：\`AGENT_BROWSER_USER_AGENT\`） |
+| \`--proxy <url>\` | 代理服务器（环境变量：\`AGENT_BROWSER_PROXY\`） |
+| \`--proxy-bypass <hosts>\` | 绕过代理的 hosts（环境变量：\`AGENT_BROWSER_PROXY_BYPASS\`） |
+| \`-p, --provider <name>\` | 云端浏览器 Provider（环境变量：\`AGENT_BROWSER_PROVIDER\`） |
+| \`--json\` | 机器可读的 JSON 输出 |
+| \`--headed\` | 显示浏览器窗口（非 headless） |
+| \`--cdp <port\\|wss://url>\` | 通过 Chrome DevTools Protocol 连接 |
+| \`--debug\` | 调试输出 |
 
-## Example: Form submission
+## Example: Form submission（示例：提交表单）
 
 \`\`\`bash
 agent-browser open https://example.com/form
 agent-browser snapshot -i
-# Output shows: textbox "Email" [ref=e1], textbox "Password" [ref=e2], button "Submit" [ref=e3]
+# 输出示例：textbox "Email" [ref=e1]、textbox "Password" [ref=e2]、button "Submit" [ref=e3]
 
 agent-browser fill @e1 "user@example.com"
 agent-browser fill @e2 "password123"
 agent-browser click @e3
 agent-browser wait --load networkidle
-agent-browser snapshot -i  # Check result
+agent-browser snapshot -i  # 检查结果
 \`\`\`
 
-## Example: Authentication with saved state
+## Example: Authentication with saved state（示例：使用保存状态进行认证）
 
 \`\`\`bash
-# Login once
+# 先登录一次
 agent-browser open https://app.example.com/login
 agent-browser snapshot -i
 agent-browser fill @e1 "username"
@@ -247,68 +248,68 @@ agent-browser click @e3
 agent-browser wait --url "**/dashboard"
 agent-browser state save auth.json
 
-# Later sessions: load saved state
+# 后续 session：加载已保存的状态
 agent-browser state load auth.json
 agent-browser open https://app.example.com/dashboard
 \`\`\`
 
-### Header-based Auth (Skip login flows)
+### Header-based Auth (Skip login flows)（基于 Header 的认证：跳过登录流程）
 \`\`\`bash
-# Headers scoped to api.example.com only
+# Header 仅对 api.example.com 生效
 agent-browser open api.example.com --headers '{"Authorization": "Bearer <token>"}'
-# Navigate to another domain - headers NOT sent (safe)
+# 切换到其他域名：不会携带 header（安全）
 agent-browser open other-site.com
-# Global headers (all domains)
+# 全局 header（对所有域名生效）
 agent-browser set headers '{"X-Custom-Header": "value"}'
 \`\`\`
 
-## Sessions & Persistent Profiles
+## Sessions & Persistent Profiles（Session 与持久化 Profile）
 
-### Sessions (parallel browsers)
+### Sessions (parallel browsers)（并行浏览器）
 \`\`\`bash
 agent-browser --session test1 open site-a.com
 agent-browser --session test2 open site-b.com
 agent-browser session list
 \`\`\`
 
-### Persistent Profiles
-Persists cookies, localStorage, IndexedDB, service workers, cache, login sessions across browser restarts.
+### Persistent Profiles（持久化 Profile）
+在浏览器重启后仍保留 cookies、localStorage、IndexedDB、service workers、缓存与登录态。
 \`\`\`bash
 agent-browser --profile ~/.myapp-profile open myapp.com
-# Or via env var
+# 或使用环境变量
 AGENT_BROWSER_PROFILE=~/.myapp-profile agent-browser open myapp.com
 \`\`\`
-- Use different profile paths for different projects
-- Login once → restart browser → still logged in
-- Stores: cookies, localStorage, IndexedDB, service workers, browser cache
+- 不同项目使用不同的 profile 路径
+- 登录一次 → 重启浏览器 → 仍保持登录状态
+- 会保存：cookies、localStorage、IndexedDB、service workers、浏览器缓存
 
-## JSON output (for parsing)
+## JSON output (for parsing)（JSON 输出：便于解析）
 
-Add \`--json\` for machine-readable output:
+添加 \`--json\` 获取机器可读输出：
 \`\`\`bash
 agent-browser snapshot -i --json
 agent-browser get text @e1 --json
 \`\`\`
 
-## Debugging
+## Debugging（调试）
 
 \`\`\`bash
-agent-browser open example.com --headed              # Show browser window
-agent-browser console                                # View console messages
-agent-browser errors                                 # View page errors
-agent-browser record start ./debug.webm              # Record from current page
-agent-browser record stop                            # Save recording
-agent-browser connect 9222                           # Local CDP port
-agent-browser --cdp "wss://browser-service.com/cdp?token=..." snapshot  # Remote via WebSocket
-agent-browser console --clear                        # Clear console
-agent-browser errors --clear                         # Clear errors
-agent-browser highlight @e1                          # Highlight element
-agent-browser trace start                            # Start recording trace
-agent-browser trace stop trace.zip                   # Stop and save trace
+agent-browser open example.com --headed              # 显示浏览器窗口
+agent-browser console                                # 查看控制台消息
+agent-browser errors                                 # 查看页面错误
+agent-browser record start ./debug.webm              # 从当前页面开始录制
+agent-browser record stop                            # 保存录制
+agent-browser connect 9222                           # 连接本地 CDP 端口
+agent-browser --cdp "wss://browser-service.com/cdp?token=..." snapshot  # 通过 WebSocket 连接远端
+agent-browser console --clear                        # 清空控制台
+agent-browser errors --clear                         # 清空错误
+agent-browser highlight @e1                          # 高亮元素
+agent-browser trace start                            # 开始录制 trace
+agent-browser trace stop trace.zip                   # 停止并保存 trace
 \`\`\`
 
 ---
-Install: \`bun add -g agent-browser && agent-browser install\`. Run \`agent-browser --help\` for all commands. Repo: https://github.com/vercel-labs/agent-browser`,
+安装：\`bun add -g agent-browser && agent-browser install\`。使用 \`agent-browser --help\` 查看全部命令。仓库：https://github.com/vercel-labs/agent-browser`,
   allowedTools: ["Bash(agent-browser:*)"],
 }
 

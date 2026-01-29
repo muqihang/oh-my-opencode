@@ -7,7 +7,7 @@ import { START_WORK_TEMPLATE } from "./templates/start-work"
 
 const BUILTIN_COMMAND_DEFINITIONS: Record<BuiltinCommandName, Omit<CommandDefinition, "name">> = {
   "init-deep": {
-    description: "(builtin) Initialize hierarchical AGENTS.md knowledge base",
+    description: "（内置）初始化分层 AGENTS.md 知识库",
     template: `<command-instruction>
 ${INIT_DEEP_TEMPLATE}
 </command-instruction>
@@ -18,7 +18,7 @@ $ARGUMENTS
     argumentHint: "[--create-new] [--max-depth=N]",
   },
    "ralph-loop": {
-     description: "(builtin) Start self-referential development loop until completion",
+     description: "（内置）启动自指开发循环，直到完成",
      template: `<command-instruction>
 ${RALPH_LOOP_TEMPLATE}
 </command-instruction>
@@ -29,7 +29,7 @@ $ARGUMENTS
      argumentHint: '"task description" [--completion-promise=TEXT] [--max-iterations=N]',
    },
    "ulw-loop": {
-     description: "(builtin) Start ultrawork loop - continues until completion with ultrawork mode",
+     description: "（内置）启动 Ultrawork 循环：在 Ultrawork 模式下持续执行直到完成",
      template: `<command-instruction>
 ${RALPH_LOOP_TEMPLATE}
 </command-instruction>
@@ -40,21 +40,21 @@ $ARGUMENTS
      argumentHint: '"task description" [--completion-promise=TEXT] [--max-iterations=N]',
    },
   "cancel-ralph": {
-    description: "(builtin) Cancel active Ralph Loop",
+    description: "（内置）取消正在运行的 Ralph Loop",
     template: `<command-instruction>
 ${CANCEL_RALPH_TEMPLATE}
 </command-instruction>`,
   },
   refactor: {
     description:
-      "(builtin) Intelligent refactoring command with LSP, AST-grep, architecture analysis, codemap, and TDD verification.",
+      "（内置）智能重构命令：集成 LSP、AST-grep、架构分析、代码地图与 TDD 验证。",
     template: `<command-instruction>
 ${REFACTOR_TEMPLATE}
 </command-instruction>`,
     argumentHint: "<refactoring-target> [--scope=<file|module|project>] [--strategy=<safe|aggressive>]",
   },
   "start-work": {
-    description: "(builtin) Start Sisyphus work session from Prometheus plan",
+    description: "（内置）基于 Prometheus 计划启动 Sisyphus 工作会话",
     template: `<command-instruction>
 ${START_WORK_TEMPLATE}
 </command-instruction>

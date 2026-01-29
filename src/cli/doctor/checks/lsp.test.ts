@@ -85,7 +85,7 @@ describe("lsp check", () => {
 
       // #then should warn
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("No LSP servers")
+      expect(result.message).toContain("未检测到")
     })
 
     it("returns pass when servers installed", async () => {
@@ -114,8 +114,8 @@ describe("lsp check", () => {
       const result = await lsp.checkLspServers()
 
       // #then should list both
-      expect(result.details?.some((d) => d.includes("Installed"))).toBe(true)
-      expect(result.details?.some((d) => d.includes("Not found"))).toBe(true)
+      expect(result.details?.some((d) => d.includes("已安装"))).toBe(true)
+      expect(result.details?.some((d) => d.includes("未找到"))).toBe(true)
     })
   })
 

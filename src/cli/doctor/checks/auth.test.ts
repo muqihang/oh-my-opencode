@@ -60,7 +60,7 @@ describe("auth check", () => {
 
       // #then should skip
       expect(result.status).toBe("skip")
-      expect(result.message).toContain("not installed")
+      expect(result.message).toContain("未安装")
     })
   })
 

@@ -37,7 +37,7 @@ describe("version check", () => {
 
       // #then should pass with dev message
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("local development")
+      expect(result.message).toContain("本地开发模式")
     })
 
     it("returns pass when pinned", async () => {
@@ -55,7 +55,7 @@ describe("version check", () => {
 
       // #then should pass with pinned message
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("Pinned")
+      expect(result.message).toContain("固定到版本")
     })
 
     it("returns warn when unable to determine version", async () => {
@@ -73,7 +73,7 @@ describe("version check", () => {
 
       // #then should warn
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("Unable to determine")
+      expect(result.message).toContain("无法确定")
     })
 
     it("returns warn when network error", async () => {
@@ -91,7 +91,7 @@ describe("version check", () => {
 
       // #then should warn
       expect(result.status).toBe("warn")
-      expect(result.details?.some((d) => d.includes("network"))).toBe(true)
+      expect(result.details?.some((d) => d.includes("网络"))).toBe(true)
     })
 
     it("returns warn when update available", async () => {
@@ -109,7 +109,7 @@ describe("version check", () => {
 
       // #then should warn with update info
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("Update available")
+      expect(result.message).toContain("发现更新")
       expect(result.message).toContain("2.6.0")
       expect(result.message).toContain("2.7.0")
     })
@@ -129,7 +129,7 @@ describe("version check", () => {
 
       // #then should pass
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("Up to date")
+      expect(result.message).toContain("已是最新")
     })
   })
 

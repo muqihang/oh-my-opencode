@@ -301,14 +301,14 @@ export function formatTextEdit(edit: TextEdit): string {
 }
 
 export function formatWorkspaceEdit(edit: WorkspaceEdit | null): string {
-  if (!edit) return "No changes"
+  if (!edit) return "无变更"
 
   const lines: string[] = []
 
   if (edit.changes) {
     for (const [uri, edits] of Object.entries(edit.changes)) {
       const filePath = uriToPath(uri)
-      lines.push(`File: ${filePath}`)
+      lines.push(`文件：${filePath}`)
       for (const textEdit of edits) {
         lines.push(formatTextEdit(textEdit))
       }
@@ -319,15 +319,15 @@ export function formatWorkspaceEdit(edit: WorkspaceEdit | null): string {
     for (const change of edit.documentChanges) {
       if ("kind" in change) {
         if (change.kind === "create") {
-          lines.push(`Create: ${change.uri}`)
+          lines.push(`创建：${change.uri}`)
         } else if (change.kind === "rename") {
-          lines.push(`Rename: ${change.oldUri} -> ${change.newUri}`)
+          lines.push(`重命名：${change.oldUri} -> ${change.newUri}`)
         } else if (change.kind === "delete") {
-          lines.push(`Delete: ${change.uri}`)
+          lines.push(`删除：${change.uri}`)
         }
       } else {
         const filePath = uriToPath(change.textDocument.uri)
-        lines.push(`File: ${filePath}`)
+        lines.push(`文件：${filePath}`)
         for (const textEdit of change.edits) {
           lines.push(formatTextEdit(textEdit))
         }
@@ -335,7 +335,7 @@ export function formatWorkspaceEdit(edit: WorkspaceEdit | null): string {
     }
   }
 
-  if (lines.length === 0) return "No changes"
+  if (lines.length === 0) return "无变更"
 
   return lines.join("\n")
 }
@@ -385,7 +385,7 @@ function applyTextEditsToFile(filePath: string, edits: TextEdit[]): { success: b
 
 export function applyWorkspaceEdit(edit: WorkspaceEdit | null): ApplyResult {
   if (!edit) {
-    return { success: false, filesModified: [], totalEdits: 0, errors: ["No edit provided"] }
+    return { success: false, filesModified: [], totalEdits: 0, errors: ["未提供 edit"] }
   }
 
   const result: ApplyResult = { success: true, filesModified: [], totalEdits: 0, errors: [] }

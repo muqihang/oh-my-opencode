@@ -138,10 +138,10 @@ export async function checkOpenCodeInstallation(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.OPENCODE_INSTALLATION],
       status: "fail",
-      message: "OpenCode is not installed",
+      message: "OpenCode 未安装",
       details: [
-        "Visit: https://opencode.ai/docs for installation instructions",
-        "Run: npm install -g opencode",
+        "安装说明：https://opencode.ai/docs",
+        "运行：npm install -g opencode",
       ],
     }
   }
@@ -150,11 +150,11 @@ export async function checkOpenCodeInstallation(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.OPENCODE_INSTALLATION],
       status: "warn",
-      message: `Version ${info.version} is below minimum ${MIN_OPENCODE_VERSION}`,
+      message: `版本 ${info.version} 低于最低要求 ${MIN_OPENCODE_VERSION}`,
       details: [
-        `Current: ${info.version}`,
-        `Required: >= ${MIN_OPENCODE_VERSION}`,
-        "Run: npm update -g opencode",
+        `当前：${info.version}`,
+        `要求：>= ${MIN_OPENCODE_VERSION}`,
+        "运行：npm update -g opencode",
       ],
     }
   }
@@ -162,8 +162,8 @@ export async function checkOpenCodeInstallation(): Promise<CheckResult> {
   return {
     name: CHECK_NAMES[CHECK_IDS.OPENCODE_INSTALLATION],
     status: "pass",
-    message: info.version ?? "installed",
-    details: info.path ? [`Path: ${info.path}`] : undefined,
+    message: info.version ?? "已安装",
+    details: info.path ? [`路径：${info.path}`] : undefined,
   }
 }
 

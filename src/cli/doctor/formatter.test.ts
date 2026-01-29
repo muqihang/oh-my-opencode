@@ -81,7 +81,7 @@ describe("formatter", () => {
     it("formats category name with styling", () => {
       const header = formatCategoryHeader("installation")
 
-      expect(header).toContain("Installation")
+      expect(header).toContain("安装")
     })
   })
 
@@ -98,10 +98,10 @@ describe("formatter", () => {
 
       const output = formatSummary(summary)
 
-      expect(output).toContain("7 passed")
-      expect(output).toContain("1 failed")
-      expect(output).toContain("2 warnings")
-      expect(output).toContain("10 checks")
+      expect(output).toContain("7 通过")
+      expect(output).toContain("1 失败")
+      expect(output).toContain("2 警告")
+      expect(output).toContain("10 项检查")
       expect(output).toContain("150ms")
     })
   })
@@ -127,7 +127,7 @@ describe("formatter", () => {
 
       const footer = formatFooter(summary)
 
-      expect(footer).toContain("Issues detected")
+      expect(footer).toContain("检测到问题")
     })
 
     it("shows warning message when warnings only", () => {
@@ -142,7 +142,7 @@ describe("formatter", () => {
 
       const footer = formatFooter(summary)
 
-      expect(footer).toContain("warnings")
+      expect(footer).toContain("警告")
     })
 
     it("shows success message when all pass", () => {
@@ -157,7 +157,7 @@ describe("formatter", () => {
 
       const footer = formatFooter(summary)
 
-      expect(footer).toContain("operational")
+      expect(footer).toContain("系统一切正常")
     })
   })
 

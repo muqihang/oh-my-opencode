@@ -170,7 +170,7 @@ describe("opencode check", () => {
 
       // #then should fail with installation hint
       expect(result.status).toBe("fail")
-      expect(result.message).toContain("not installed")
+      expect(result.message).toContain("未安装")
       expect(result.details).toBeDefined()
       expect(result.details?.some((d) => d.includes("opencode.ai"))).toBe(true)
     })
@@ -189,7 +189,7 @@ describe("opencode check", () => {
 
       // #then should warn about old version
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("below minimum")
+      expect(result.message).toContain("低于最低要求")
       expect(result.details?.some((d) => d.includes(MIN_OPENCODE_VERSION))).toBe(true)
     })
 

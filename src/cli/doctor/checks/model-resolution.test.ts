@@ -53,7 +53,7 @@ describe("model-resolution check", () => {
       const oracle = info.agents.find((a) => a.name === "oracle")
       expect(oracle).toBeDefined()
       expect(oracle!.userOverride).toBe("anthropic/claude-opus-4-5")
-      expect(oracle!.effectiveResolution).toBe("User override: anthropic/claude-opus-4-5")
+      expect(oracle!.effectiveResolution).toBe("用户覆盖：anthropic/claude-opus-4-5")
     })
 
     it("shows user override for category when configured", async () => {
@@ -72,7 +72,7 @@ describe("model-resolution check", () => {
       const visual = info.categories.find((c) => c.name === "visual-engineering")
       expect(visual).toBeDefined()
       expect(visual!.userOverride).toBe("openai/gpt-5.2")
-      expect(visual!.effectiveResolution).toBe("User override: openai/gpt-5.2")
+      expect(visual!.effectiveResolution).toBe("用户覆盖：openai/gpt-5.2")
     })
 
     it("shows provider fallback when no override exists", async () => {
@@ -87,7 +87,7 @@ describe("model-resolution check", () => {
       const sisyphus = info.agents.find((a) => a.name === "sisyphus")
       expect(sisyphus).toBeDefined()
       expect(sisyphus!.userOverride).toBeUndefined()
-      expect(sisyphus!.effectiveResolution).toContain("Provider fallback:")
+      expect(sisyphus!.effectiveResolution).toContain("提供方回退：")
       expect(sisyphus!.effectiveResolution).toContain("anthropic")
     })
   })
@@ -105,7 +105,7 @@ describe("model-resolution check", () => {
       // #then: Should pass (with cache) or warn (no cache) and show counts
       // In CI without model cache, status is "warn"; locally with cache, status is "pass"
       expect(["pass", "warn"]).toContain(result.status)
-      expect(result.message).toMatch(/\d+ agents?, \d+ categories?/)
+      expect(result.message).toMatch(/\d+ 个代理，\d+ 个分类/)
     })
 
     it("includes resolution details in verbose mode details array", async () => {
@@ -117,12 +117,12 @@ describe("model-resolution check", () => {
       expect(result.details).toBeDefined()
       expect(result.details!.length).toBeGreaterThan(0)
       // Should have Available Models and Configured Models headers
-      expect(result.details!.some((d) => d.includes("Available Models"))).toBe(true)
-      expect(result.details!.some((d) => d.includes("Configured Models"))).toBe(true)
-      expect(result.details!.some((d) => d.includes("Agents:"))).toBe(true)
-      expect(result.details!.some((d) => d.includes("Categories:"))).toBe(true)
+      expect(result.details!.some((d) => d.includes("可用模型"))).toBe(true)
+      expect(result.details!.some((d) => d.includes("已配置模型"))).toBe(true)
+      expect(result.details!.some((d) => d.includes("代理："))).toBe(true)
+      expect(result.details!.some((d) => d.includes("分类："))).toBe(true)
       // Should have legend
-      expect(result.details!.some((d) => d.includes("user override"))).toBe(true)
+      expect(result.details!.some((d) => d.includes("用户覆盖"))).toBe(true)
     })
   })
 
@@ -133,7 +133,7 @@ describe("model-resolution check", () => {
       const def = getModelResolutionCheckDefinition()
 
       expect(def.id).toBe("model-resolution")
-      expect(def.name).toBe("Model Resolution")
+      expect(def.name).toBe("模型解析")
       expect(def.category).toBe("configuration")
       expect(typeof def.check).toBe("function")
     })

@@ -325,7 +325,7 @@ export function createClaudeCodeHooksHook(
         if (sessionID) {
           sessionErrorState.set(sessionID, {
             hasError: true,
-            errorMessage: String(props?.error ?? "Unknown error"),
+            errorMessage: String(props?.error ?? "未知错误"),
           })
         }
         return

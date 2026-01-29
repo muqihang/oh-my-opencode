@@ -10,47 +10,47 @@ export const DELEGATE_TASK_ERROR_PATTERNS: DelegateTaskErrorPattern[] = [
   {
     pattern: "run_in_background",
     errorType: "missing_run_in_background",
-    fixHint: "Add run_in_background=false (for delegation) or run_in_background=true (for parallel exploration)",
+    fixHint: "添加 run_in_background=false（用于委派）或 run_in_background=true（用于并行探索）",
   },
   {
     pattern: "load_skills",
     errorType: "missing_load_skills",
-    fixHint: "Add load_skills=[] parameter (empty array if no skills needed). Note: Calling Skill tool does NOT populate this.",
+    fixHint: "添加 load_skills=[] 参数（若不需要技能则传空数组）。注意：调用 Skill 工具不会自动填充该字段。",
   },
   {
     pattern: "category OR subagent_type",
     errorType: "mutual_exclusion",
-    fixHint: "Provide ONLY one of: category (e.g., 'general', 'quick') OR subagent_type (e.g., 'oracle', 'explore')",
+    fixHint: "只能二选一：category（如 'general'、'quick'）或 subagent_type（如 'oracle'、'explore'）",
   },
   {
     pattern: "Must provide either category or subagent_type",
     errorType: "missing_category_or_agent",
-    fixHint: "Add either category='general' OR subagent_type='explore'",
+    fixHint: "添加 category='general' 或 subagent_type='explore'（二选一）",
   },
   {
     pattern: "Unknown category",
     errorType: "unknown_category",
-    fixHint: "Use a valid category from the Available list in the error message",
+    fixHint: "从错误信息中的 Available 列表里选择一个有效的 category",
   },
   {
     pattern: "Agent name cannot be empty",
     errorType: "empty_agent",
-    fixHint: "Provide a non-empty subagent_type value",
+    fixHint: "提供一个非空的 subagent_type 值",
   },
   {
     pattern: "Unknown agent",
     errorType: "unknown_agent",
-    fixHint: "Use a valid agent from the Available agents list in the error message",
+    fixHint: "从错误信息中的 Available agents 列表里选择一个有效的 agent",
   },
   {
     pattern: "Cannot call primary agent",
     errorType: "primary_agent",
-    fixHint: "Primary agents cannot be called via delegate_task. Use a subagent like 'explore', 'oracle', or 'librarian'",
+    fixHint: "Primary agent 不能通过 delegate_task 调用。请使用子代理，如 'explore'、'oracle' 或 'librarian'",
   },
   {
     pattern: "Skills not found",
     errorType: "unknown_skills",
-    fixHint: "Use valid skill names from the Available list in the error message",
+    fixHint: "从错误信息中的 Available 列表里选择有效的 skill 名称",
   },
 ]
 
@@ -85,30 +85,30 @@ export function buildRetryGuidance(errorInfo: DetectedError): string {
   )
 
   if (!pattern) {
-    return `[delegate_task ERROR] Fix the error and retry with correct parameters.`
+    return `[delegate_task 错误] 请修复错误并使用正确参数重试。`
   }
 
   let guidance = `
-[delegate_task CALL FAILED - IMMEDIATE RETRY REQUIRED]
+[delegate_task 调用失败 - 需要立即重试]
 
-**Error Type**: ${errorInfo.errorType}
-**Fix**: ${pattern.fixHint}
+**错误类型**: ${errorInfo.errorType}
+**修复方式**: ${pattern.fixHint}
 `
 
   const availableList = extractAvailableList(errorInfo.originalOutput)
   if (availableList) {
-    guidance += `\n**Available Options**: ${availableList}\n`
+    guidance += `\n**可用选项**: ${availableList}\n`
   }
 
   guidance += `
-**Action**: Retry delegate_task NOW with corrected parameters.
+**操作**: 请立即使用修正后的参数重试 delegate_task。
 
-Example of CORRECT call:
+正确调用示例：
 \`\`\`
 delegate_task(
   description="Task description",
   prompt="Detailed prompt...",
-  category="unspecified-low",  // OR subagent_type="explore"
+  category="unspecified-low",  // 或 subagent_type="explore"
   run_in_background=false,
   load_skills=[]
 )

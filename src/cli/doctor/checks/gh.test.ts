@@ -84,8 +84,8 @@ describe("gh cli check", () => {
 
       // #then should warn (optional)
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("Not installed")
-      expect(result.details).toContain("Install: https://cli.github.com/")
+      expect(result.message).toContain("未安装")
+      expect(result.details).toContain("安装：https://cli.github.com/")
     })
 
     it("returns warn when gh is installed but not authenticated", async () => {
@@ -106,8 +106,8 @@ describe("gh cli check", () => {
       // #then should warn about auth
       expect(result.status).toBe("warn")
       expect(result.message).toContain("2.40.0")
-      expect(result.message).toContain("not authenticated")
-      expect(result.details).toContain("Authenticate: gh auth login")
+      expect(result.message).toContain("未登录")
+      expect(result.details).toContain("认证：gh auth login")
     })
 
     it("returns pass when gh is installed and authenticated", async () => {
@@ -129,8 +129,8 @@ describe("gh cli check", () => {
       expect(result.status).toBe("pass")
       expect(result.message).toContain("2.40.0")
       expect(result.message).toContain("octocat")
-      expect(result.details).toContain("Account: octocat")
-      expect(result.details).toContain("Scopes: repo, read:org")
+      expect(result.details).toContain("账号：octocat")
+      expect(result.details).toContain("Scopes：repo, read:org")
     })
   })
 

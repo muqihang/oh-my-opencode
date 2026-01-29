@@ -2,18 +2,18 @@ import type { GrepResult, GrepMatch, CountResult } from "./types"
 
 export function formatGrepResult(result: GrepResult): string {
   if (result.error) {
-    return `Error: ${result.error}`
+    return `错误：${result.error}`
   }
 
   if (result.matches.length === 0) {
-    return "No matches found"
+    return "未找到匹配项"
   }
 
   const lines: string[] = []
 
-  lines.push(`Found ${result.totalMatches} match(es) in ${result.filesSearched} file(s)`)
+  lines.push(`在 ${result.filesSearched} 个文件中找到 ${result.totalMatches} 处匹配`)
   if (result.truncated) {
-    lines.push("[Output truncated due to size limit]")
+    lines.push("【输出已因大小限制被截断】")
   }
   lines.push("")
 
@@ -37,11 +37,11 @@ export function formatGrepResult(result: GrepResult): string {
 
 export function formatCountResult(results: CountResult[]): string {
   if (results.length === 0) {
-    return "No matches found"
+    return "未找到匹配项"
   }
 
   const total = results.reduce((sum, r) => sum + r.count, 0)
-  const lines: string[] = [`Found ${total} match(es) in ${results.length} file(s):`, ""]
+  const lines: string[] = [`在 ${results.length} 个文件中找到 ${total} 处匹配：`, ""]
 
   const sorted = [...results].sort((a, b) => b.count - a.count)
 

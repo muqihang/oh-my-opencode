@@ -118,16 +118,16 @@ async function formatLoadedCommand(cmd: CommandInfo): Promise<string> {
   }
 
   if (cmd.metadata.agent) {
-    sections.push(`**Agent**: ${cmd.metadata.agent}\n`)
+    sections.push(`**代理**: ${cmd.metadata.agent}\n`)
   }
 
   if (cmd.metadata.subtask) {
-    sections.push(`**Subtask**: true\n`)
+    sections.push(`**子任务**: true\n`)
   }
 
-  sections.push(`**Scope**: ${cmd.scope}\n`)
+  sections.push(`**作用域**: ${cmd.scope}\n`)
   sections.push("---\n")
-  sections.push("## Command Instructions\n")
+  sections.push("## 命令说明\n")
 
   let content = cmd.content || ""
   if (!content && cmd.lazyContentLoader) {
@@ -144,26 +144,26 @@ async function formatLoadedCommand(cmd: CommandInfo): Promise<string> {
 
 function formatCommandList(items: CommandInfo[]): string {
   if (items.length === 0) {
-    return "No commands or skills found."
+    return "未找到命令或技能。"
   }
 
-  const lines = ["# Available Commands & Skills\n"]
+  const lines = ["# 可用命令与技能\n"]
 
   for (const cmd of items) {
     const hint = cmd.metadata.argumentHint ? ` ${cmd.metadata.argumentHint}` : ""
     lines.push(
-      `- **/${cmd.name}${hint}**: ${cmd.metadata.description || "(no description)"} (${cmd.scope})`
+      `- **/${cmd.name}${hint}**: ${cmd.metadata.description || "（无描述）"} (${cmd.scope})`
     )
   }
 
-  lines.push(`\n**Total**: ${items.length} items`)
+  lines.push(`\n**总计**：${items.length} 项`)
   return lines.join("\n")
 }
 
-const TOOL_DESCRIPTION_PREFIX = `Load a skill to get detailed instructions for a specific task.
+const TOOL_DESCRIPTION_PREFIX = `加载一个技能，以获取针对特定任务的详细指引。
 
-Skills provide specialized knowledge and step-by-step guidance.
-Use this when a task matches an available skill's description.
+技能会提供专业知识与分步骤的操作说明。
+当任务与某个可用技能的描述相匹配时使用本工具。
 `
 
 function buildDescriptionFromItems(items: CommandInfo[]): string {

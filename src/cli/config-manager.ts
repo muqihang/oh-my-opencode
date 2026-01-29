@@ -74,28 +74,28 @@ function isFileNotFoundError(err: unknown): boolean {
 
 function formatErrorWithSuggestion(err: unknown, context: string): string {
   if (isPermissionError(err)) {
-    return `Permission denied: Cannot ${context}. Try running with elevated permissions or check file ownership.`
+    return `权限不足：无法${context}。请尝试使用更高权限运行，或检查文件/目录所有者与权限。`
   }
 
   if (isFileNotFoundError(err)) {
-    return `File not found while trying to ${context}. The file may have been deleted or moved.`
+    return `文件不存在：在尝试${context}时未找到文件，可能已被删除或移动。`
   }
 
   if (err instanceof SyntaxError) {
-    return `JSON syntax error while trying to ${context}: ${err.message}. Check for missing commas, brackets, or invalid characters.`
+    return `JSON 语法错误：在尝试${context}时出错：${err.message}。请检查是否缺少逗号、括号或包含非法字符。`
   }
 
   const message = err instanceof Error ? err.message : String(err)
 
   if (message.includes("ENOSPC")) {
-    return `Disk full: Cannot ${context}. Free up disk space and try again.`
+    return `磁盘空间不足：无法${context}。请释放磁盘空间后重试。`
   }
 
   if (message.includes("EROFS")) {
-    return `Read-only filesystem: Cannot ${context}. Check if the filesystem is mounted read-only.`
+    return `只读文件系统：无法${context}。请检查文件系统是否以只读方式挂载。`
   }
 
-  return `Failed to ${context}: ${message}`
+  return `${context}失败：${message}`
 }
 
 export async function fetchLatestVersion(packageName: string): Promise<string | null> {
@@ -188,28 +188,28 @@ function parseConfigWithError(path: string): ParseConfigResult {
   try {
     const stat = statSync(path)
     if (stat.size === 0) {
-      return { config: null, error: `Config file is empty: ${path}. Delete it or add valid JSON content.` }
+      return { config: null, error: `配置文件为空：${path}。请删除该文件或写入有效的 JSON 内容。` }
     }
 
     const content = readFileSync(path, "utf-8")
 
     if (isEmptyOrWhitespace(content)) {
-      return { config: null, error: `Config file contains only whitespace: ${path}. Delete it or add valid JSON content.` }
+      return { config: null, error: `配置文件仅包含空白字符：${path}。请删除该文件或写入有效的 JSON 内容。` }
     }
 
     const config = parseJsonc<OpenCodeConfig>(content)
 
     if (config === null || config === undefined) {
-      return { config: null, error: `Config file parsed to null/undefined: ${path}. Ensure it contains valid JSON.` }
+      return { config: null, error: `配置文件解析结果为 null/undefined：${path}。请确认它包含有效的 JSON。` }
     }
 
     if (typeof config !== "object" || Array.isArray(config)) {
-      return { config: null, error: `Config file must contain a JSON object, not ${Array.isArray(config) ? "an array" : typeof config}: ${path}` }
+      return { config: null, error: `配置文件必须是 JSON 对象，而不是${Array.isArray(config) ? "数组" : typeof config}：${path}` }
     }
 
     return { config }
   } catch (err) {
-    return { config: null, error: formatErrorWithSuggestion(err, `parse config file ${path}`) }
+    return { config: null, error: formatErrorWithSuggestion(err, `解析配置文件 ${path}`) }
   }
 }
 
@@ -224,7 +224,7 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
   try {
     ensureConfigDir()
   } catch (err) {
-    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "create config directory") }
+    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "创建配置目录") }
   }
 
   const { format, path } = detectConfigFormat()
@@ -239,7 +239,7 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
 
     const parseResult = parseConfigWithError(path)
     if (!parseResult.config) {
-      return { success: false, configPath: path, error: parseResult.error ?? "Failed to parse config file" }
+      return { success: false, configPath: path, error: parseResult.error ?? "无法解析配置文件" }
     }
 
     const config = parseResult.config
@@ -276,7 +276,7 @@ export async function addPluginToOpenCodeConfig(currentVersion: string): Promise
 
     return { success: true, configPath: path }
   } catch (err) {
-    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "update opencode config") }
+    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "更新 OpenCode 配置") }
   }
 }
 
@@ -315,7 +315,7 @@ export function writeOmoConfig(installConfig: InstallConfig): ConfigMergeResult 
   try {
     ensureConfigDir()
   } catch (err) {
-    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "create config directory") }
+    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "创建配置目录") }
   }
 
   const omoConfigPath = getOmoConfig()
@@ -354,7 +354,7 @@ export function writeOmoConfig(installConfig: InstallConfig): ConfigMergeResult 
 
     return { success: true, configPath: omoConfigPath }
   } catch (err) {
-    return { success: false, configPath: omoConfigPath, error: formatErrorWithSuggestion(err, "write oh-my-opencode config") }
+    return { success: false, configPath: omoConfigPath, error: formatErrorWithSuggestion(err, "写入 oh-my-opencode 配置") }
   }
 }
 
@@ -398,7 +398,7 @@ export async function addAuthPlugins(config: InstallConfig): Promise<ConfigMerge
   try {
     ensureConfigDir()
   } catch (err) {
-    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "create config directory") }
+    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "创建配置目录") }
   }
 
   const { format, path } = detectConfigFormat()
@@ -430,7 +430,7 @@ export async function addAuthPlugins(config: InstallConfig): Promise<ConfigMerge
     writeFileSync(path, JSON.stringify(newConfig, null, 2) + "\n")
     return { success: true, configPath: path }
   } catch (err) {
-    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "add auth plugins to config") }
+    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "向配置中添加鉴权插件") }
   }
 }
 
@@ -470,7 +470,7 @@ export async function runBunInstallWithDetails(): Promise<BunInstallResult> {
       return {
         success: false,
         timedOut: true,
-        error: `bun install timed out after ${BUN_INSTALL_TIMEOUT_SECONDS} seconds. Try running manually: cd ~/.config/opencode && bun i`,
+        error: `bun install 超时（${BUN_INSTALL_TIMEOUT_SECONDS} 秒）。你可以手动运行：cd ~/.config/opencode && bun i`,
       }
     }
 
@@ -478,7 +478,7 @@ export async function runBunInstallWithDetails(): Promise<BunInstallResult> {
       const stderr = await new Response(proc.stderr).text()
       return {
         success: false,
-        error: stderr.trim() || `bun install failed with exit code ${proc.exitCode}`,
+        error: stderr.trim() || `bun install 失败，退出码：${proc.exitCode}`,
       }
     }
 
@@ -487,7 +487,7 @@ export async function runBunInstallWithDetails(): Promise<BunInstallResult> {
     const message = err instanceof Error ? err.message : String(err)
     return {
       success: false,
-      error: `bun install failed: ${message}. Is bun installed? Try: curl -fsSL https://bun.sh/install | bash`,
+      error: `bun install 失败：${message}。请确认已安装 bun。可尝试：curl -fsSL https://bun.sh/install | bash`,
     }
   }
 }
@@ -563,7 +563,7 @@ export function addProviderConfig(config: InstallConfig): ConfigMergeResult {
   try {
     ensureConfigDir()
   } catch (err) {
-    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "create config directory") }
+    return { success: false, configPath: getConfigDir(), error: formatErrorWithSuggestion(err, "创建配置目录") }
   }
 
   const { format, path } = detectConfigFormat()
@@ -594,7 +594,7 @@ export function addProviderConfig(config: InstallConfig): ConfigMergeResult {
     writeFileSync(path, JSON.stringify(newConfig, null, 2) + "\n")
     return { success: true, configPath: path }
   } catch (err) {
-    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "add provider config") }
+    return { success: false, configPath: path, error: formatErrorWithSuggestion(err, "添加 Provider 配置") }
   }
 }
 

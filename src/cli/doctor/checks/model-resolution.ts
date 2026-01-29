@@ -107,7 +107,7 @@ function getEffectiveModel(requirement: ModelRequirement, userOverride?: string)
   }
   const firstEntry = requirement.fallbackChain[0]
   if (!firstEntry) {
-    return "unknown"
+    return "未知"
   }
   return `${firstEntry.providers[0]}/${firstEntry.model}`
 }
@@ -117,13 +117,13 @@ function buildEffectiveResolution(
   userOverride?: string,
 ): string {
   if (userOverride) {
-    return `User override: ${userOverride}`
+    return `用户覆盖：${userOverride}`
   }
   const firstEntry = requirement.fallbackChain[0]
   if (!firstEntry) {
-    return "No fallback chain defined"
+    return "未定义回退链"
   }
-  return `Provider fallback: ${formatProviderChain(firstEntry.providers)} → ${firstEntry.model}`
+  return `提供方回退：${formatProviderChain(firstEntry.providers)} → ${firstEntry.model}`
 }
 
 export function getModelResolutionInfo(): ModelResolutionInfo {
@@ -196,37 +196,37 @@ interface AvailableModelsInfo {
 function buildDetailsArray(info: ModelResolutionInfo, available: AvailableModelsInfo): string[] {
   const details: string[] = []
 
-  details.push("═══ Available Models (from cache) ═══")
+  details.push("═══ 可用模型（来自缓存） ═══")
   details.push("")
   if (available.cacheExists) {
-    details.push(`  Providers in cache: ${available.providers.length}`)
-    details.push(`  Sample: ${available.providers.slice(0, 6).join(", ")}${available.providers.length > 6 ? "..." : ""}`)
-    details.push(`  Total models: ${available.modelCount}`)
-    details.push(`  Cache: ~/.cache/opencode/models.json`)
-    details.push(`  ℹ Runtime: only connected providers used`)
-    details.push(`  Refresh: opencode models --refresh`)
+    details.push(`  缓存中的 Providers：${available.providers.length}`)
+    details.push(`  示例：${available.providers.slice(0, 6).join(", ")}${available.providers.length > 6 ? "..." : ""}`)
+    details.push(`  模型总数：${available.modelCount}`)
+    details.push(`  缓存位置：~/.cache/opencode/models.json`)
+    details.push(`  ℹ 运行时：仅使用已连接的 Providers`)
+    details.push(`  刷新：opencode models --refresh`)
   } else {
-    details.push("  ⚠ Cache not found. Run 'opencode' to populate.")
+    details.push("  ⚠ 未找到缓存。请运行 'opencode' 以生成缓存。")
   }
   details.push("")
 
-  details.push("═══ Configured Models ═══")
+  details.push("═══ 已配置模型 ═══")
   details.push("")
-  details.push("Agents:")
+  details.push("代理：")
   for (const agent of info.agents) {
     const marker = agent.userOverride ? "●" : "○"
     const display = formatModelWithVariant(agent.effectiveModel, getEffectiveVariant(agent.requirement))
     details.push(`  ${marker} ${agent.name}: ${display}`)
   }
   details.push("")
-  details.push("Categories:")
+  details.push("分类：")
   for (const category of info.categories) {
     const marker = category.userOverride ? "●" : "○"
     const display = formatModelWithVariant(category.effectiveModel, getEffectiveVariant(category.requirement))
     details.push(`  ${marker} ${category.name}: ${display}`)
   }
   details.push("")
-  details.push("● = user override, ○ = provider fallback")
+  details.push("● = 用户覆盖，○ = Provider 回退")
 
   return details
 }
@@ -242,13 +242,13 @@ export async function checkModelResolution(): Promise<CheckResult> {
   const categoryOverrides = info.categories.filter((c) => c.userOverride).length
   const totalOverrides = agentOverrides + categoryOverrides
 
-  const overrideNote = totalOverrides > 0 ? ` (${totalOverrides} override${totalOverrides > 1 ? "s" : ""})` : ""
-  const cacheNote = available.cacheExists ? `, ${available.modelCount} available` : ", cache not found"
+  const overrideNote = totalOverrides > 0 ? `（${totalOverrides} 项覆盖）` : ""
+  const cacheNote = available.cacheExists ? `，可用模型 ${available.modelCount} 个` : "，未找到缓存"
 
   return {
     name: CHECK_NAMES[CHECK_IDS.MODEL_RESOLUTION],
     status: available.cacheExists ? "pass" : "warn",
-    message: `${agentCount} agents, ${categoryCount} categories${overrideNote}${cacheNote}`,
+    message: `${agentCount} 个代理，${categoryCount} 个分类${overrideNote}${cacheNote}`,
     details: buildDetailsArray(info, available),
   }
 }

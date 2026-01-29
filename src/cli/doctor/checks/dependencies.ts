@@ -41,7 +41,7 @@ export async function checkAstGrepCli(): Promise<DependencyInfo> {
       installed: false,
       version: null,
       path: null,
-      installHint: "Install: npm install -g @ast-grep/cli",
+      installHint: "安装：npm install -g @ast-grep/cli",
     }
   }
 
@@ -96,7 +96,7 @@ export async function checkAstGrepNapi(): Promise<DependencyInfo> {
       installed: false,
       version: null,
       path: null,
-      installHint: "Will use CLI fallback if available",
+      installHint: "如可用将回退使用 CLI",
     }
   }
 }
@@ -106,19 +106,19 @@ export async function checkCommentChecker(): Promise<DependencyInfo> {
 
   if (!binaryCheck.exists) {
     return {
-      name: "Comment Checker",
+      name: "注释检查器",
       required: false,
       installed: false,
       version: null,
       path: null,
-      installHint: "Hook will be disabled if not available",
+      installHint: "不可用时将禁用相关 hook",
     }
   }
 
   const version = await getBinaryVersion("comment-checker")
 
   return {
-    name: "Comment Checker",
+    name: "注释检查器",
     required: false,
     installed: true,
     version,
@@ -131,15 +131,15 @@ function dependencyToCheckResult(dep: DependencyInfo, checkName: string): CheckR
     return {
       name: checkName,
       status: "pass",
-      message: dep.version ?? "installed",
-      details: dep.path ? [`Path: ${dep.path}`] : undefined,
+      message: dep.version ?? "已安装",
+      details: dep.path ? [`路径：${dep.path}`] : undefined,
     }
   }
 
   return {
     name: checkName,
     status: "warn",
-    message: "Not installed (optional)",
+    message: "未安装（可选）",
     details: dep.installHint ? [dep.installHint] : undefined,
   }
 }

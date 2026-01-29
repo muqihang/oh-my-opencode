@@ -40,7 +40,7 @@ export function validateConfig(configPath: string): { valid: boolean; errors: st
   } catch (err) {
     return {
       valid: false,
-      errors: [err instanceof Error ? err.message : "Failed to parse config"],
+      errors: [err instanceof Error ? err.message : "配置解析失败"],
     }
   }
 }
@@ -86,8 +86,8 @@ export async function checkConfigValidity(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.CONFIG_VALIDATION],
       status: "pass",
-      message: "Using default configuration",
-      details: ["No custom config file found (optional)"],
+      message: "使用默认配置",
+      details: ["未找到自定义配置文件（可选）"],
     }
   }
 
@@ -95,10 +95,10 @@ export async function checkConfigValidity(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.CONFIG_VALIDATION],
       status: "fail",
-      message: "Configuration has validation errors",
+      message: "配置存在校验错误",
       details: [
-        `Path: ${info.path}`,
-        ...info.errors.map((e) => `Error: ${e}`),
+        `路径：${info.path}`,
+        ...info.errors.map((e) => `错误：${e}`),
       ],
     }
   }
@@ -106,8 +106,8 @@ export async function checkConfigValidity(): Promise<CheckResult> {
   return {
     name: CHECK_NAMES[CHECK_IDS.CONFIG_VALIDATION],
     status: "pass",
-    message: `Valid ${info.format?.toUpperCase()} config`,
-    details: [`Path: ${info.path}`],
+    message: `${info.format?.toUpperCase()} 配置有效`,
+    details: [`路径：${info.path}`],
   }
 }
 

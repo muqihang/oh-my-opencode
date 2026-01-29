@@ -55,10 +55,10 @@ export async function checkAuthProvider(providerId: AuthProviderId): Promise<Che
     return {
       name: checkName,
       status: "skip",
-      message: "Auth plugin not installed",
+      message: "认证插件未安装",
       details: [
-        `Plugin: ${AUTH_PLUGINS[providerId].plugin}`,
-        "Run: bunx oh-my-opencode install",
+        `插件：${AUTH_PLUGINS[providerId].plugin}`,
+        "运行：bunx oh-my-opencode install",
       ],
     }
   }
@@ -66,11 +66,11 @@ export async function checkAuthProvider(providerId: AuthProviderId): Promise<Che
   return {
     name: checkName,
     status: "pass",
-    message: "Auth plugin available",
+    message: "认证插件可用",
     details: [
       providerId === "anthropic"
-        ? "Run: opencode auth login (select Anthropic)"
-        : `Plugin: ${AUTH_PLUGINS[providerId].plugin}`,
+        ? "运行：opencode auth login（选择 Anthropic）"
+        : `插件：${AUTH_PLUGINS[providerId].plugin}`,
     ],
   }
 }

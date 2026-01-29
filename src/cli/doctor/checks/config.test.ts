@@ -48,7 +48,7 @@ describe("config check", () => {
 
       // #then should pass with default message
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("default")
+      expect(result.message).toContain("默认")
     })
 
     it("returns pass when config is valid", async () => {
@@ -84,7 +84,7 @@ describe("config check", () => {
 
       // #then should fail with errors
       expect(result.status).toBe("fail")
-      expect(result.details?.some((d) => d.includes("Error"))).toBe(true)
+      expect(result.details?.some((d) => d.includes("错误"))).toBe(true)
     })
   })
 

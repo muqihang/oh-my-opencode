@@ -75,8 +75,8 @@ export async function checkVersionStatus(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
       status: "pass",
-      message: "Running in local development mode",
-      details: ["Using file:// protocol from config"],
+      message: "正在以本地开发模式运行",
+      details: ["配置中使用 file:// 协议"],
     }
   }
 
@@ -84,8 +84,8 @@ export async function checkVersionStatus(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
       status: "pass",
-      message: `Pinned to version ${info.currentVersion}`,
-      details: ["Update check skipped for pinned versions"],
+      message: `已固定到版本 ${info.currentVersion}`,
+      details: ["固定版本将跳过更新检查"],
     }
   }
 
@@ -93,8 +93,8 @@ export async function checkVersionStatus(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
       status: "warn",
-      message: "Unable to determine current version",
-      details: ["Run: bunx oh-my-opencode get-local-version"],
+      message: "无法确定当前版本",
+      details: ["运行：bunx oh-my-opencode get-local-version"],
     }
   }
 
@@ -102,8 +102,8 @@ export async function checkVersionStatus(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
       status: "warn",
-      message: `Current: ${info.currentVersion}`,
-      details: ["Unable to check for updates (network error)"],
+      message: `当前：${info.currentVersion}`,
+      details: ["无法检查更新（网络错误）"],
     }
   }
 
@@ -111,16 +111,16 @@ export async function checkVersionStatus(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
       status: "warn",
-      message: `Update available: ${info.currentVersion} -> ${info.latestVersion}`,
-      details: ["Run: cd ~/.config/opencode && bun update oh-my-opencode"],
+      message: `发现更新：${info.currentVersion} -> ${info.latestVersion}`,
+      details: ["运行：cd ~/.config/opencode && bun update oh-my-opencode"],
     }
   }
 
   return {
     name: CHECK_NAMES[CHECK_IDS.VERSION_STATUS],
     status: "pass",
-    message: `Up to date (${info.currentVersion})`,
-    details: info.latestVersion ? [`Latest: ${info.latestVersion}`] : undefined,
+    message: `已是最新（${info.currentVersion}）`,
+    details: info.latestVersion ? [`最新：${info.latestVersion}`] : undefined,
   }
 }
 

@@ -84,10 +84,10 @@ export async function checkPluginRegistration(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.PLUGIN_REGISTRATION],
       status: "fail",
-      message: "OpenCode config file not found",
+      message: "未找到 OpenCode 配置文件",
       details: [
-        "Run: bunx oh-my-opencode install",
-        `Expected: ${expectedPaths.configJson} or ${expectedPaths.configJsonc}`,
+        "运行：bunx oh-my-opencode install",
+        `期望：${expectedPaths.configJson} 或 ${expectedPaths.configJsonc}`,
       ],
     }
   }
@@ -96,23 +96,23 @@ export async function checkPluginRegistration(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.PLUGIN_REGISTRATION],
       status: "fail",
-      message: "Plugin not registered in config",
+      message: "配置中未注册插件",
       details: [
-        "Run: bunx oh-my-opencode install",
-        `Config: ${info.configPath}`,
+        "运行：bunx oh-my-opencode install",
+        `配置：${info.configPath}`,
       ],
     }
   }
 
   const message = info.isPinned
-    ? `Registered (pinned: ${info.pinnedVersion})`
-    : "Registered"
+    ? `已注册（固定版本：${info.pinnedVersion}）`
+    : "已注册"
 
   return {
     name: CHECK_NAMES[CHECK_IDS.PLUGIN_REGISTRATION],
     status: "pass",
     message,
-    details: [`Config: ${info.configPath}`],
+    details: [`配置：${info.configPath}`],
   }
 }
 

@@ -78,14 +78,14 @@ async function getGhAuthStatus(): Promise<{
       authenticated: false,
       username: null,
       scopes: [],
-      error: errorMatch?.[1]?.trim() ?? "Not authenticated",
+      error: errorMatch?.[1]?.trim() ?? "未登录",
     }
   } catch (err) {
     return {
       authenticated: false,
       username: null,
       scopes: [],
-      error: err instanceof Error ? err.message : "Failed to check auth status",
+      error: err instanceof Error ? err.message : "检查认证状态失败",
     }
   }
 }
@@ -126,10 +126,10 @@ export async function checkGhCli(): Promise<CheckResult> {
     return {
       name,
       status: "warn",
-      message: "Not installed (optional)",
+      message: "未安装（可选）",
       details: [
-        "GitHub CLI is used by librarian agent and scripts",
-        "Install: https://cli.github.com/",
+        "GitHub CLI 会被 librarian 代理与脚本使用",
+        "安装：https://cli.github.com/",
       ],
     }
   }
@@ -138,24 +138,24 @@ export async function checkGhCli(): Promise<CheckResult> {
     return {
       name,
       status: "warn",
-      message: `${info.version ?? "installed"} - not authenticated`,
+      message: `${info.version ?? "已安装"} - 未登录`,
       details: [
-        info.path ? `Path: ${info.path}` : null,
-        "Authenticate: gh auth login",
-        info.error ? `Error: ${info.error}` : null,
+        info.path ? `路径：${info.path}` : null,
+        "认证：gh auth login",
+        info.error ? `错误：${info.error}` : null,
       ].filter((d): d is string => d !== null),
     }
   }
 
   const details: string[] = []
-  if (info.path) details.push(`Path: ${info.path}`)
-  if (info.username) details.push(`Account: ${info.username}`)
-  if (info.scopes.length > 0) details.push(`Scopes: ${info.scopes.join(", ")}`)
+  if (info.path) details.push(`路径：${info.path}`)
+  if (info.username) details.push(`账号：${info.username}`)
+  if (info.scopes.length > 0) details.push(`Scopes：${info.scopes.join(", ")}`)
 
   return {
     name,
     status: "pass",
-    message: `${info.version ?? "installed"} - authenticated as ${info.username ?? "unknown"}`,
+    message: `${info.version ?? "已安装"} - 已登录：${info.username ?? "unknown"}`,
     details: details.length > 0 ? details : undefined,
   }
 }

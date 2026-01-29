@@ -18,7 +18,7 @@ describe("session-manager utils", () => {
     const result = await formatSessionList(sessions)
 
     // #then
-    expect(result).toContain("No sessions found")
+    expect(result).toContain("未找到会话")
   })
 
   test("formatSessionMessages handles empty array", () => {
@@ -29,7 +29,7 @@ describe("session-manager utils", () => {
     const result = formatSessionMessages(messages)
 
     // #then
-    expect(result).toContain("No messages")
+    expect(result).toContain("未找到消息")
   })
 
   test("formatSessionMessages includes message content", () => {
@@ -70,7 +70,7 @@ describe("session-manager utils", () => {
     const result = formatSessionMessages(messages, true, todos)
 
     // #then
-    expect(result).toContain("Todos")
+    expect(result).toContain("TODO")
     expect(result).toContain("Task 1")
     expect(result).toContain("Task 2")
   })
@@ -96,7 +96,7 @@ describe("session-manager utils", () => {
     expect(result).toContain("ses_test123")
     expect(result).toContain("42")
     expect(result).toContain("build, oracle")
-    expect(result).toContain("Duration")
+    expect(result).toContain("耗时")
   })
 
   test("formatSearchResults handles empty array", () => {
@@ -107,7 +107,7 @@ describe("session-manager utils", () => {
     const result = formatSearchResults(results)
 
     // #then
-    expect(result).toContain("No matches")
+    expect(result).toContain("未找到匹配")
   })
 
   test("formatSearchResults formats matches correctly", () => {
@@ -127,11 +127,11 @@ describe("session-manager utils", () => {
     const result = formatSearchResults(results)
 
     // #then
-    expect(result).toContain("Found 1 matches")
+    expect(result).toContain("找到 1 条匹配")
     expect(result).toContain("ses_test123")
     expect(result).toContain("msg_001")
     expect(result).toContain("example text")
-    expect(result).toContain("Matches: 3")
+    expect(result).toContain("匹配次数：3")
   })
 
   test("filterSessionsByDate filters correctly", async () => {

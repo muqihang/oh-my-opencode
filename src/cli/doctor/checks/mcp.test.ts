@@ -37,7 +37,7 @@ describe("mcp check", () => {
       // #then should pass
       expect(result.status).toBe("pass")
       expect(result.message).toContain("2")
-      expect(result.message).toContain("enabled")
+      expect(result.message).toContain("已启用")
     })
 
     it("lists enabled servers in details", async () => {
@@ -67,7 +67,7 @@ describe("mcp check", () => {
 
       // #then should skip
       expect(result.status).toBe("skip")
-      expect(result.message).toContain("No user MCP")
+      expect(result.message).toContain("未找到用户 MCP")
     })
 
     it("returns pass when valid user servers", async () => {
@@ -95,7 +95,7 @@ describe("mcp check", () => {
 
       // #then should warn
       expect(result.status).toBe("warn")
-      expect(result.details?.some((d) => d.includes("Invalid"))).toBe(true)
+      expect(result.details?.some((d) => d.includes("无效"))).toBe(true)
     })
   })
 

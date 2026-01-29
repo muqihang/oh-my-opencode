@@ -17,7 +17,7 @@ export async function run(options: RunOptions): Promise<number> {
     timeout = DEFAULT_TIMEOUT_MS,
   } = options
 
-  console.log(pc.cyan("Starting opencode server..."))
+  console.log(pc.cyan("正在启动 opencode 服务..."))
 
   const abortController = new AbortController()
   let timeoutId: ReturnType<typeof setTimeout> | null = null
@@ -25,7 +25,7 @@ export async function run(options: RunOptions): Promise<number> {
   // timeout=0 means no timeout (run until completion)
   if (timeout > 0) {
     timeoutId = setTimeout(() => {
-      console.log(pc.yellow("\nTimeout reached. Aborting..."))
+      console.log(pc.yellow("\n已达到超时时间，正在中止..."))
       abortController.abort()
     }, timeout)
   }
@@ -51,7 +51,7 @@ export async function run(options: RunOptions): Promise<number> {
     }
 
     process.on("SIGINT", () => {
-      console.log(pc.yellow("\nInterrupted. Shutting down..."))
+      console.log(pc.yellow("\n已中断，正在关闭..."))
       cleanup()
       process.exit(130)
     })
@@ -64,17 +64,17 @@ export async function run(options: RunOptions): Promise<number> {
 
       for (let attempt = 1; attempt <= SESSION_CREATE_MAX_RETRIES; attempt++) {
         const sessionRes = await client.session.create({
-          body: { title: "oh-my-opencode run" },
+          body: { title: "oh-my-opencode 运行" },
         })
 
         if (sessionRes.error) {
           lastError = sessionRes.error
-          console.error(pc.yellow(`Session create attempt ${attempt}/${SESSION_CREATE_MAX_RETRIES} failed:`))
-          console.error(pc.dim(`  Error: ${serializeError(sessionRes.error)}`))
+          console.error(pc.yellow(`创建会话尝试 ${attempt}/${SESSION_CREATE_MAX_RETRIES} 失败：`))
+          console.error(pc.dim(`  错误：${serializeError(sessionRes.error)}`))
 
           if (attempt < SESSION_CREATE_MAX_RETRIES) {
             const delay = SESSION_CREATE_RETRY_DELAY_MS * attempt
-            console.log(pc.dim(`  Retrying in ${delay}ms...`))
+            console.log(pc.dim(`  将在 ${delay}ms 后重试...`))
             await new Promise((resolve) => setTimeout(resolve, delay))
             continue
           }
@@ -86,24 +86,24 @@ export async function run(options: RunOptions): Promise<number> {
         }
 
         // No error but also no session ID - unexpected response
-        lastError = new Error(`Unexpected response: ${JSON.stringify(sessionRes, null, 2)}`)
-        console.error(pc.yellow(`Session create attempt ${attempt}/${SESSION_CREATE_MAX_RETRIES}: No session ID returned`))
+        lastError = new Error(`意外响应：${JSON.stringify(sessionRes, null, 2)}`)
+        console.error(pc.yellow(`创建会话尝试 ${attempt}/${SESSION_CREATE_MAX_RETRIES}：未返回 session ID`))
 
         if (attempt < SESSION_CREATE_MAX_RETRIES) {
           const delay = SESSION_CREATE_RETRY_DELAY_MS * attempt
-          console.log(pc.dim(`  Retrying in ${delay}ms...`))
+          console.log(pc.dim(`  将在 ${delay}ms 后重试...`))
           await new Promise((resolve) => setTimeout(resolve, delay))
         }
       }
 
       if (!sessionID) {
-        console.error(pc.red("Failed to create session after all retries"))
-        console.error(pc.dim(`Last error: ${serializeError(lastError)}`))
+        console.error(pc.red("多次重试后仍无法创建会话"))
+        console.error(pc.dim(`最后一次错误：${serializeError(lastError)}`))
         cleanup()
         return 1
       }
 
-      console.log(pc.dim(`Session: ${sessionID}`))
+      console.log(pc.dim(`会话：${sessionID}`))
 
       const ctx: RunContext = {
         client,
@@ -116,7 +116,7 @@ export async function run(options: RunOptions): Promise<number> {
       const eventState = createEventState()
       const eventProcessor = processEvents(ctx, events.stream, eventState)
 
-      console.log(pc.dim("\nSending prompt..."))
+      console.log(pc.dim("\n正在发送提示词..."))
       await client.session.promptAsync({
         path: { id: sessionID },
         body: {
@@ -126,7 +126,7 @@ export async function run(options: RunOptions): Promise<number> {
         query: { directory },
       })
 
-      console.log(pc.dim("Waiting for completion...\n"))
+      console.log(pc.dim("正在等待完成...\n"))
 
       while (!abortController.signal.aborted) {
         await new Promise((resolve) => setTimeout(resolve, POLL_INTERVAL_MS))
@@ -137,15 +137,15 @@ export async function run(options: RunOptions): Promise<number> {
 
         // Check if session errored - exit with failure if so
         if (eventState.mainSessionError) {
-          console.error(pc.red(`\n\nSession ended with error: ${eventState.lastError}`))
-          console.error(pc.yellow("Check if todos were completed before the error."))
+          console.error(pc.red(`\n\n会话以错误结束：${eventState.lastError}`))
+          console.error(pc.yellow("请检查在出错前 TODO 是否已完成。"))
           cleanup()
           process.exit(1)
         }
 
         const shouldExit = await checkCompletionConditions(ctx)
         if (shouldExit) {
-          console.log(pc.green("\n\nAll tasks completed."))
+          console.log(pc.green("\n\n所有任务已完成。"))
           cleanup()
           process.exit(0)
         }
@@ -163,7 +163,7 @@ export async function run(options: RunOptions): Promise<number> {
     if (err instanceof Error && err.name === "AbortError") {
       return 130
     }
-    console.error(pc.red(`Error: ${serializeError(err)}`))
+    console.error(pc.red(`错误：${serializeError(err)}`))
     return 1
   }
 }

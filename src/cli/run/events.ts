@@ -12,12 +12,12 @@ import type {
 } from "./types"
 
 export function serializeError(error: unknown): string {
-  if (!error) return "Unknown error"
+  if (!error) return "未知错误"
 
   if (error instanceof Error) {
     const parts = [error.message]
     if (error.cause) {
-      parts.push(`Cause: ${serializeError(error.cause)}`)
+      parts.push(`原因：${serializeError(error.cause)}`)
     }
     return parts.join(" | ")
   }
@@ -87,7 +87,7 @@ export async function processEvents(
     try {
       const payload = event as EventPayload
       if (!payload?.type) {
-        console.error(pc.dim(`[event] no type: ${JSON.stringify(event)}`))
+        console.error(pc.dim(`[事件] 缺少 type：${JSON.stringify(event)}`))
         continue
       }
 
@@ -101,7 +101,7 @@ export async function processEvents(
       handleToolExecute(ctx, payload, state)
       handleToolResult(ctx, payload, state)
     } catch (err) {
-      console.error(pc.red(`[event error] ${err}`))
+      console.error(pc.red(`[事件处理错误] ${err}`))
     }
   }
 }
@@ -131,7 +131,7 @@ function logEventVerbose(ctx: RunContext, payload: EventPayload): void {
       if (part?.type === "tool-invocation") {
         const toolPart = part as { toolName?: string; state?: string }
         console.error(
-          pc.dim(`${sessionTag} message.part (tool): ${toolPart.toolName} [${toolPart.state}]`)
+          pc.dim(`${sessionTag} 消息片段（工具）：${toolPart.toolName} [${toolPart.state}]`)
         )
       }
       break
@@ -139,24 +139,24 @@ function logEventVerbose(ctx: RunContext, payload: EventPayload): void {
 
     case "message.updated": {
       const msgProps = props as MessageUpdatedProps | undefined
-      const role = msgProps?.info?.role ?? "unknown"
+      const role = msgProps?.info?.role ?? "未知"
       const content = msgProps?.content ?? ""
       const preview = content.slice(0, 100).replace(/\n/g, "\\n")
       console.error(
-        pc.dim(`${sessionTag} message.updated (${role}): "${preview}${content.length > 100 ? "..." : ""}"`)
+        pc.dim(`${sessionTag} 消息更新 (${role})："${preview}${content.length > 100 ? "..." : ""}"`)
       )
       break
     }
 
     case "tool.execute": {
       const toolProps = props as ToolExecuteProps | undefined
-      const toolName = toolProps?.name ?? "unknown"
+      const toolName = toolProps?.name ?? "未知"
       const input = toolProps?.input ?? {}
       const inputStr = JSON.stringify(input).slice(0, 150)
       console.error(
-        pc.cyan(`${sessionTag} TOOL.EXECUTE: ${pc.bold(toolName)}`)
+        pc.cyan(`${sessionTag} 工具执行：${pc.bold(toolName)}`)
       )
-      console.error(pc.dim(`   input: ${inputStr}${inputStr.length >= 150 ? "..." : ""}`))
+      console.error(pc.dim(`   输入：${inputStr}${inputStr.length >= 150 ? "..." : ""}`))
       break
     }
 
@@ -165,7 +165,7 @@ function logEventVerbose(ctx: RunContext, payload: EventPayload): void {
       const output = resultProps?.output ?? ""
       const preview = output.slice(0, 200).replace(/\n/g, "\\n")
       console.error(
-        pc.green(`${sessionTag} TOOL.RESULT: "${preview}${output.length > 200 ? "..." : ""}"`)
+        pc.green(`${sessionTag} 工具结果："${preview}${output.length > 200 ? "..." : ""}"`)
       )
       break
     }
@@ -173,7 +173,7 @@ function logEventVerbose(ctx: RunContext, payload: EventPayload): void {
     case "session.error": {
       const errorProps = props as SessionErrorProps | undefined
       const errorMsg = serializeError(errorProps?.error)
-      console.error(pc.red(`${sessionTag} SESSION.ERROR: ${errorMsg}`))
+      console.error(pc.red(`${sessionTag} 会话错误：${errorMsg}`))
       break
     }
 
@@ -219,7 +219,7 @@ function handleSessionError(
   if (props?.sessionID === ctx.sessionID) {
     state.mainSessionError = true
     state.lastError = serializeError(props?.error)
-    console.error(pc.red(`\n[session.error] ${state.lastError}`))
+    console.error(pc.red(`\n[会话错误] ${state.lastError}`))
   }
 }
 
@@ -279,7 +279,7 @@ function handleToolExecute(
   const props = payload.properties as ToolExecuteProps | undefined
   if (props?.sessionID !== ctx.sessionID) return
 
-  const toolName = props?.name || "unknown"
+  const toolName = props?.name || "未知"
   state.currentTool = toolName
 
   let inputPreview = ""

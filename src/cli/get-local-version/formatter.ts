@@ -15,44 +15,44 @@ export function formatVersionOutput(info: VersionInfo): string {
   const lines: string[] = []
 
   lines.push("")
-  lines.push(color.bold(color.white("oh-my-opencode Version Information")))
+  lines.push(color.bold(color.white("oh-my-opencode 版本信息")))
   lines.push(color.dim("─".repeat(50)))
   lines.push("")
 
   if (info.currentVersion) {
-    lines.push(`  Current Version: ${color.cyan(info.currentVersion)}`)
+    lines.push(`  当前版本：${color.cyan(info.currentVersion)}`)
   } else {
-    lines.push(`  Current Version: ${color.dim("unknown")}`)
+    lines.push(`  当前版本：${color.dim("未知")}`)
   }
 
   if (!info.isLocalDev && info.latestVersion) {
-    lines.push(`  Latest Version:  ${color.cyan(info.latestVersion)}`)
+    lines.push(`  最新版本：${color.cyan(info.latestVersion)}`)
   }
 
   lines.push("")
 
   switch (info.status) {
     case "up-to-date":
-      lines.push(`  ${SYMBOLS.check} ${color.green("You're up to date!")}`)
+      lines.push(`  ${SYMBOLS.check} ${color.green("已是最新版本！")}`)
       break
     case "outdated":
-      lines.push(`  ${SYMBOLS.warn} ${color.yellow("Update available")}`)
-      lines.push(`  ${color.dim("Run:")} ${color.cyan("cd ~/.config/opencode && bun update oh-my-opencode")}`)
+      lines.push(`  ${SYMBOLS.warn} ${color.yellow("有可用更新")}`)
+      lines.push(`  ${color.dim("执行：")} ${color.cyan("cd ~/.config/opencode && bun update oh-my-opencode")}`)
       break
     case "local-dev":
-      lines.push(`  ${SYMBOLS.dev} ${color.cyan("Running in local development mode")}`)
-      lines.push(`  ${color.dim("Using file:// protocol from config")}`)
+      lines.push(`  ${SYMBOLS.dev} ${color.cyan("正在以本地开发模式运行")}`)
+      lines.push(`  ${color.dim("正在使用配置中的 file:// 协议")}`)
       break
     case "pinned":
-      lines.push(`  ${SYMBOLS.pin} ${color.magenta(`Version pinned to ${info.pinnedVersion}`)}`)
-      lines.push(`  ${color.dim("Update check skipped for pinned versions")}`)
+      lines.push(`  ${SYMBOLS.pin} ${color.magenta(`版本已固定为 ${info.pinnedVersion}`)}`)
+      lines.push(`  ${color.dim("固定版本已跳过更新检查")}`)
       break
     case "error":
-      lines.push(`  ${SYMBOLS.cross} ${color.red("Unable to check for updates")}`)
-      lines.push(`  ${color.dim("Network error or npm registry unavailable")}`)
+      lines.push(`  ${SYMBOLS.cross} ${color.red("无法检查更新")}`)
+      lines.push(`  ${color.dim("网络错误或 npm registry 不可用")}`)
       break
     case "unknown":
-      lines.push(`  ${SYMBOLS.info} ${color.yellow("Version information unavailable")}`)
+      lines.push(`  ${SYMBOLS.info} ${color.yellow("版本信息不可用")}`)
       break
   }
 

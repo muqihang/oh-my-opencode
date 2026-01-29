@@ -34,7 +34,7 @@ describe("createSubagentQuestionBlockerHook", () => {
       const result = hook["tool.execute.before"]?.(input as any, output as any)
 
       //#then
-      await expect(result).rejects.toThrow("Question tool is disabled for subagent sessions")
+      await expect(result).rejects.toThrow("子代理会话中已禁用 Question 工具")
     })
 
     test("blocks Question tool (case insensitive) for subagent sessions", async () => {
@@ -48,7 +48,7 @@ describe("createSubagentQuestionBlockerHook", () => {
       const result = hook["tool.execute.before"]?.(input as any, output as any)
 
       //#then
-      await expect(result).rejects.toThrow("Question tool is disabled for subagent sessions")
+      await expect(result).rejects.toThrow("子代理会话中已禁用 Question 工具")
     })
 
     test("blocks AskUserQuestion tool for subagent sessions", async () => {
@@ -62,7 +62,7 @@ describe("createSubagentQuestionBlockerHook", () => {
       const result = hook["tool.execute.before"]?.(input as any, output as any)
 
       //#then
-      await expect(result).rejects.toThrow("Question tool is disabled for subagent sessions")
+      await expect(result).rejects.toThrow("子代理会话中已禁用 Question 工具")
     })
 
     test("ignores non-question tools for subagent sessions", async () => {

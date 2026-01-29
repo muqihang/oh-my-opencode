@@ -177,8 +177,9 @@ async function showModelCacheWarningIfNeeded(ctx: PluginInput): Promise<void> {
   await ctx.client.tui
     .showToast({
       body: {
-        title: "Model Cache Not Found",
-        message: "Run 'opencode models --refresh' or restart OpenCode to populate the models cache for optimal agent model selection.",
+        title: "未找到模型缓存",
+        message:
+          "请运行 `opencode models --refresh` 或重启 OpenCode，以生成模型缓存并启用更准确的代理模型选择。",
         variant: "warning" as const,
         duration: 10000,
       },
@@ -197,8 +198,8 @@ async function updateAndShowConnectedProvidersCacheStatus(ctx: PluginInput): Pro
     await ctx.client.tui
       .showToast({
         body: {
-          title: "Connected Providers Cache",
-          message: "Building provider cache for first time. Restart OpenCode for full model filtering.",
+          title: "已连接 Provider 缓存",
+          message: "首次构建 Provider 缓存中。重启 OpenCode 以启用完整的模型过滤。",
           variant: "info" as const,
           duration: 8000,
         },

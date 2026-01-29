@@ -423,8 +423,8 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
       if (!hasConnectedProvidersCache()) {
         ctx.client.tui.showToast({
           body: {
-            title: "⚠️ Provider Cache Missing",
-            message: "Model filtering disabled. RESTART OpenCode to enable full functionality.",
+            title: "⚠️ Provider 缓存缺失",
+            message: "已禁用模型过滤。重启 OpenCode 以启用完整功能。",
             variant: "warning" as const,
             duration: 6000,
           },

@@ -35,31 +35,31 @@ function formatProvider(name: string, enabled: boolean, detail?: string): string
 function formatConfigSummary(config: InstallConfig): string {
   const lines: string[] = []
 
-  lines.push(color.bold(color.white("Configuration Summary")))
+  lines.push(color.bold(color.white("配置摘要")))
   lines.push("")
 
-  const claudeDetail = config.hasClaude ? (config.isMax20 ? "max20" : "standard") : undefined
+  const claudeDetail = config.hasClaude ? (config.isMax20 ? "max20" : "标准") : undefined
   lines.push(formatProvider("Claude", config.hasClaude, claudeDetail))
-  lines.push(formatProvider("OpenAI/ChatGPT", config.hasOpenAI, "GPT-5.2 for Oracle"))
+  lines.push(formatProvider("OpenAI/ChatGPT", config.hasOpenAI, "Oracle 使用 GPT-5.2"))
   lines.push(formatProvider("Gemini", config.hasGemini))
-  lines.push(formatProvider("GitHub Copilot", config.hasCopilot, "fallback"))
-  lines.push(formatProvider("OpenCode Zen", config.hasOpencodeZen, "opencode/ models"))
+  lines.push(formatProvider("GitHub Copilot", config.hasCopilot, "备用"))
+  lines.push(formatProvider("OpenCode Zen", config.hasOpencodeZen, "opencode/ 模型"))
   lines.push(formatProvider("Z.ai Coding Plan", config.hasZaiCodingPlan, "Librarian/Multimodal"))
 
   lines.push("")
   lines.push(color.dim("─".repeat(40)))
   lines.push("")
 
-  lines.push(color.bold(color.white("Model Assignment")))
+  lines.push(color.bold(color.white("模型分配")))
   lines.push("")
-  lines.push(`  ${SYMBOLS.info} Models auto-configured based on provider priority`)
-  lines.push(`  ${SYMBOLS.bullet} Priority: Native > Copilot > OpenCode Zen > Z.ai`)
+  lines.push(`  ${SYMBOLS.info} 模型将根据 Provider 优先级自动配置`)
+  lines.push(`  ${SYMBOLS.bullet} 优先级：原生 > Copilot > OpenCode Zen > Z.ai`)
 
   return lines.join("\n")
 }
 
 function printHeader(isUpdate: boolean): void {
-  const mode = isUpdate ? "Update" : "Install"
+  const mode = isUpdate ? "更新" : "安装"
   console.log()
   console.log(color.bgMagenta(color.white(` oMoMoMoMo... ${mode} `)))
   console.log()
@@ -112,33 +112,33 @@ function validateNonTuiArgs(args: InstallArgs): { valid: boolean; errors: string
   const errors: string[] = []
 
   if (args.claude === undefined) {
-    errors.push("--claude is required (values: no, yes, max20)")
+    errors.push("必须提供 --claude（取值：no, yes, max20）")
   } else if (!["no", "yes", "max20"].includes(args.claude)) {
-    errors.push(`Invalid --claude value: ${args.claude} (expected: no, yes, max20)`)
+    errors.push(`--claude 参数值无效：${args.claude}（期望：no, yes, max20）`)
   }
 
   if (args.gemini === undefined) {
-    errors.push("--gemini is required (values: no, yes)")
+    errors.push("必须提供 --gemini（取值：no, yes）")
   } else if (!["no", "yes"].includes(args.gemini)) {
-    errors.push(`Invalid --gemini value: ${args.gemini} (expected: no, yes)`)
+    errors.push(`--gemini 参数值无效：${args.gemini}（期望：no, yes）`)
   }
 
   if (args.copilot === undefined) {
-    errors.push("--copilot is required (values: no, yes)")
+    errors.push("必须提供 --copilot（取值：no, yes）")
   } else if (!["no", "yes"].includes(args.copilot)) {
-    errors.push(`Invalid --copilot value: ${args.copilot} (expected: no, yes)`)
+    errors.push(`--copilot 参数值无效：${args.copilot}（期望：no, yes）`)
   }
 
   if (args.openai !== undefined && !["no", "yes"].includes(args.openai)) {
-    errors.push(`Invalid --openai value: ${args.openai} (expected: no, yes)`)
+    errors.push(`--openai 参数值无效：${args.openai}（期望：no, yes）`)
   }
 
   if (args.opencodeZen !== undefined && !["no", "yes"].includes(args.opencodeZen)) {
-    errors.push(`Invalid --opencode-zen value: ${args.opencodeZen} (expected: no, yes)`)
+    errors.push(`--opencode-zen 参数值无效：${args.opencodeZen}（期望：no, yes）`)
   }
 
   if (args.zaiCodingPlan !== undefined && !["no", "yes"].includes(args.zaiCodingPlan)) {
-    errors.push(`Invalid --zai-coding-plan value: ${args.zaiCodingPlan} (expected: no, yes)`)
+    errors.push(`--zai-coding-plan 参数值无效：${args.zaiCodingPlan}（期望：no, yes）`)
   }
 
   return { valid: errors.length === 0, errors }
@@ -176,87 +176,87 @@ async function runTuiMode(detected: DetectedConfig): Promise<InstallConfig | nul
   const initial = detectedToInitialValues(detected)
 
   const claude = await p.select({
-    message: "Do you have a Claude Pro/Max subscription?",
+    message: "你是否拥有 Claude Pro/Max 订阅？",
     options: [
-      { value: "no" as const, label: "No", hint: "Will use opencode/big-pickle as fallback" },
-      { value: "yes" as const, label: "Yes (standard)", hint: "Claude Opus 4.5 for orchestration" },
-      { value: "max20" as const, label: "Yes (max20 mode)", hint: "Full power with Claude Sonnet 4.5 for Librarian" },
+      { value: "no" as const, label: "没有", hint: "将使用 opencode/big-pickle 作为回退" },
+      { value: "yes" as const, label: "有（标准）", hint: "使用 Claude Opus 4.5 作为编排器" },
+      { value: "max20" as const, label: "有（max20 模式）", hint: "为 Librarian 启用 Claude Sonnet 4.5（满血）" },
     ],
     initialValue: initial.claude,
   })
 
   if (p.isCancel(claude)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
   const openai = await p.select({
-    message: "Do you have an OpenAI/ChatGPT Plus subscription?",
+    message: "你是否拥有 OpenAI/ChatGPT Plus 订阅？",
     options: [
-      { value: "no" as const, label: "No", hint: "Oracle will use fallback models" },
-      { value: "yes" as const, label: "Yes", hint: "GPT-5.2 for Oracle (high-IQ debugging)" },
+      { value: "no" as const, label: "没有", hint: "Oracle 将使用回退模型" },
+      { value: "yes" as const, label: "有", hint: "Oracle 使用 GPT-5.2（高质量调试）" },
     ],
     initialValue: initial.openai,
   })
 
   if (p.isCancel(openai)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
   const gemini = await p.select({
-    message: "Will you integrate Google Gemini?",
+    message: "是否集成 Google Gemini？",
     options: [
-      { value: "no" as const, label: "No", hint: "Frontend/docs agents will use fallback" },
-      { value: "yes" as const, label: "Yes", hint: "Beautiful UI generation with Gemini 3 Pro" },
+      { value: "no" as const, label: "否", hint: "前端/文档代理将使用回退模型" },
+      { value: "yes" as const, label: "是", hint: "使用 Gemini 3 Pro 生成高质量 UI" },
     ],
     initialValue: initial.gemini,
   })
 
   if (p.isCancel(gemini)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
   const copilot = await p.select({
-    message: "Do you have a GitHub Copilot subscription?",
+    message: "你是否拥有 GitHub Copilot 订阅？",
     options: [
-      { value: "no" as const, label: "No", hint: "Only native providers will be used" },
-      { value: "yes" as const, label: "Yes", hint: "Fallback option when native providers unavailable" },
+      { value: "no" as const, label: "没有", hint: "仅使用原生 Provider" },
+      { value: "yes" as const, label: "有", hint: "当原生 Provider 不可用时作为回退" },
     ],
     initialValue: initial.copilot,
   })
 
   if (p.isCancel(copilot)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
   const opencodeZen = await p.select({
-    message: "Do you have access to OpenCode Zen (opencode/ models)?",
+    message: "你是否可以使用 OpenCode Zen（opencode/ 模型）？",
     options: [
-      { value: "no" as const, label: "No", hint: "Will use other configured providers" },
-      { value: "yes" as const, label: "Yes", hint: "opencode/claude-opus-4-5, opencode/gpt-5.2, etc." },
+      { value: "no" as const, label: "不可以", hint: "将使用其他已配置的 Provider" },
+      { value: "yes" as const, label: "可以", hint: "例如：opencode/claude-opus-4-5、opencode/gpt-5.2 等" },
     ],
     initialValue: initial.opencodeZen,
   })
 
   if (p.isCancel(opencodeZen)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
   const zaiCodingPlan = await p.select({
-    message: "Do you have a Z.ai Coding Plan subscription?",
+    message: "你是否拥有 Z.ai Coding Plan 订阅？",
     options: [
-      { value: "no" as const, label: "No", hint: "Will use other configured providers" },
-      { value: "yes" as const, label: "Yes", hint: "Fallback for Librarian and Multimodal Looker" },
+      { value: "no" as const, label: "没有", hint: "将使用其他已配置的 Provider" },
+      { value: "yes" as const, label: "有", hint: "作为 Librarian / Multimodal Looker 的回退" },
     ],
     initialValue: initial.zaiCodingPlan,
   })
 
   if (p.isCancel(zaiCodingPlan)) {
-    p.cancel("Installation cancelled.")
+    p.cancel("已取消安装。")
     return null
   }
 
@@ -275,12 +275,12 @@ async function runNonTuiInstall(args: InstallArgs): Promise<number> {
   const validation = validateNonTuiArgs(args)
   if (!validation.valid) {
     printHeader(false)
-    printError("Validation failed:")
+    printError("参数校验失败：")
     for (const err of validation.errors) {
       console.log(`  ${SYMBOLS.bullet} ${err}`)
     }
     console.log()
-    printInfo("Usage: bunx oh-my-opencode install --no-tui --claude=<no|yes|max20> --gemini=<no|yes> --copilot=<no|yes>")
+    printInfo("用法：bunx oh-my-opencode install --no-tui --claude=<no|yes|max20> --gemini=<no|yes> --copilot=<no|yes>")
     console.log()
     return 1
   }
@@ -293,103 +293,103 @@ async function runNonTuiInstall(args: InstallArgs): Promise<number> {
   const totalSteps = 6
   let step = 1
 
-  printStep(step++, totalSteps, "Checking OpenCode installation...")
+  printStep(step++, totalSteps, "检查 OpenCode 安装情况...")
   const installed = await isOpenCodeInstalled()
   const version = await getOpenCodeVersion()
   if (!installed) {
-    printWarning("OpenCode binary not found. Plugin will be configured, but you'll need to install OpenCode to use it.")
-    printInfo("Visit https://opencode.ai/docs for installation instructions")
+    printWarning("未找到 OpenCode 可执行文件。会继续配置插件，但你需要先安装 OpenCode 才能使用。")
+    printInfo("安装说明：https://opencode.ai/docs")
   } else {
-    printSuccess(`OpenCode ${version ?? ""} detected`)
+    printSuccess(`检测到 OpenCode ${version ?? ""}`)
   }
 
   if (isUpdate) {
     const initial = detectedToInitialValues(detected)
-    printInfo(`Current config: Claude=${initial.claude}, Gemini=${initial.gemini}`)
+    printInfo(`当前配置：Claude=${initial.claude}, Gemini=${initial.gemini}`)
   }
 
   const config = argsToConfig(args)
 
-  printStep(step++, totalSteps, "Adding oh-my-opencode plugin...")
+  printStep(step++, totalSteps, "添加 oh-my-opencode 插件...")
   const pluginResult = await addPluginToOpenCodeConfig(VERSION)
   if (!pluginResult.success) {
-    printError(`Failed: ${pluginResult.error}`)
+    printError(`失败：${pluginResult.error}`)
     return 1
   }
-  printSuccess(`Plugin ${isUpdate ? "verified" : "added"} ${SYMBOLS.arrow} ${color.dim(pluginResult.configPath)}`)
+  printSuccess(`插件${isUpdate ? "已验证" : "已添加"} ${SYMBOLS.arrow} ${color.dim(pluginResult.configPath)}`)
 
   if (config.hasGemini) {
-    printStep(step++, totalSteps, "Adding auth plugins...")
+    printStep(step++, totalSteps, "添加认证插件...")
     const authResult = await addAuthPlugins(config)
     if (!authResult.success) {
-      printError(`Failed: ${authResult.error}`)
+      printError(`失败：${authResult.error}`)
       return 1
     }
-    printSuccess(`Auth plugins configured ${SYMBOLS.arrow} ${color.dim(authResult.configPath)}`)
+    printSuccess(`认证插件已配置 ${SYMBOLS.arrow} ${color.dim(authResult.configPath)}`)
 
-    printStep(step++, totalSteps, "Adding provider configurations...")
+    printStep(step++, totalSteps, "添加 Provider 配置...")
     const providerResult = addProviderConfig(config)
     if (!providerResult.success) {
-      printError(`Failed: ${providerResult.error}`)
+      printError(`失败：${providerResult.error}`)
       return 1
     }
-    printSuccess(`Providers configured ${SYMBOLS.arrow} ${color.dim(providerResult.configPath)}`)
+    printSuccess(`Provider 配置完成 ${SYMBOLS.arrow} ${color.dim(providerResult.configPath)}`)
   } else {
     step += 2
   }
 
-  printStep(step++, totalSteps, "Writing oh-my-opencode configuration...")
+  printStep(step++, totalSteps, "写入 oh-my-opencode 配置...")
   const omoResult = writeOmoConfig(config)
   if (!omoResult.success) {
-    printError(`Failed: ${omoResult.error}`)
+    printError(`失败：${omoResult.error}`)
     return 1
   }
-  printSuccess(`Config written ${SYMBOLS.arrow} ${color.dim(omoResult.configPath)}`)
+  printSuccess(`配置已写入 ${SYMBOLS.arrow} ${color.dim(omoResult.configPath)}`)
 
-  printBox(formatConfigSummary(config), isUpdate ? "Updated Configuration" : "Installation Complete")
+  printBox(formatConfigSummary(config), isUpdate ? "配置已更新" : "安装完成")
 
   if (!config.hasClaude) {
     console.log()
-    console.log(color.bgRed(color.white(color.bold(" CRITICAL WARNING "))))
+    console.log(color.bgRed(color.white(color.bold(" 重要警告 "))))
     console.log()
-    console.log(color.red(color.bold("  Sisyphus agent is STRONGLY optimized for Claude Opus 4.5.")))
-    console.log(color.red("  Without Claude, you may experience significantly degraded performance:"))
-    console.log(color.dim("    • Reduced orchestration quality"))
-    console.log(color.dim("    • Weaker tool selection and delegation"))
-    console.log(color.dim("    • Less reliable task completion"))
+    console.log(color.red(color.bold("  Sisyphus 代理强烈建议搭配 Claude Opus 4.5 使用。")))
+    console.log(color.red("  若未配置 Claude，你可能会遇到明显的性能下降："))
+    console.log(color.dim("    • 编排质量降低"))
+    console.log(color.dim("    • 工具选择与委托更弱"))
+    console.log(color.dim("    • 任务完成可靠性下降"))
     console.log()
-    console.log(color.yellow("  Consider subscribing to Claude Pro/Max for the best experience."))
+    console.log(color.yellow("  建议订阅 Claude Pro/Max 以获得最佳体验。"))
     console.log()
   }
 
   if (!config.hasClaude && !config.hasOpenAI && !config.hasGemini && !config.hasCopilot && !config.hasOpencodeZen) {
-    printWarning("No model providers configured. Using opencode/big-pickle as fallback.")
+    printWarning("未配置任何模型 Provider，将使用 opencode/big-pickle 作为回退。")
   }
 
-  console.log(`${SYMBOLS.star} ${color.bold(color.green(isUpdate ? "Configuration updated!" : "Installation complete!"))}`)
-  console.log(`  Run ${color.cyan("opencode")} to start!`)
+  console.log(`${SYMBOLS.star} ${color.bold(color.green(isUpdate ? "配置已更新！" : "安装完成！"))}`)
+  console.log(`  运行 ${color.cyan("opencode")} 即可开始！`)
   console.log()
 
   printBox(
-    `${color.bold("Pro Tip:")} Include ${color.cyan("ultrawork")} (or ${color.cyan("ulw")}) in your prompt.\n` +
-    `All features work like magic—parallel agents, background tasks,\n` +
-    `deep exploration, and relentless execution until completion.`,
-    "The Magic Word"
+    `${color.bold("小贴士：")}在提示词中加入 ${color.cyan("ultrawork")}（或 ${color.cyan("ulw")}）。\n` +
+    `所有能力将像“开挂”一样生效：并行代理、后台任务、\n` +
+    `深度探索，以及不达目标不罢休的执行。`,
+    "魔法关键词"
   )
 
-  console.log(`${SYMBOLS.star} ${color.yellow("If you found this helpful, consider starring the repo!")}`)
+  console.log(`${SYMBOLS.star} ${color.yellow("如果对你有帮助，欢迎给仓库点个 Star！")}`)
   console.log(`  ${color.dim("gh repo star code-yeongyu/oh-my-opencode")}`)
   console.log()
-  console.log(color.dim("oMoMoMoMo... Enjoy!"))
+  console.log(color.dim("oMoMoMoMo... 尽情享用！"))
   console.log()
 
   if ((config.hasClaude || config.hasGemini || config.hasCopilot) && !args.skipAuth) {
     printBox(
-      `Run ${color.cyan("opencode auth login")} and select your provider:\n` +
+      `运行 ${color.cyan("opencode auth login")} 并选择你的 Provider：\n` +
       (config.hasClaude ? `  ${SYMBOLS.bullet} Anthropic ${color.gray("→ Claude Pro/Max")}\n` : "") +
-      (config.hasGemini ? `  ${SYMBOLS.bullet} Google ${color.gray("→ OAuth with Antigravity")}\n` : "") +
+      (config.hasGemini ? `  ${SYMBOLS.bullet} Google ${color.gray("→ Antigravity OAuth")}\n` : "") +
       (config.hasCopilot ? `  ${SYMBOLS.bullet} GitHub ${color.gray("→ Copilot")}` : ""),
-      "Authenticate Your Providers"
+      "认证你的 Provider"
     )
   }
 
@@ -404,101 +404,101 @@ export async function install(args: InstallArgs): Promise<number> {
   const detected = detectCurrentConfig()
   const isUpdate = detected.isInstalled
 
-  p.intro(color.bgMagenta(color.white(isUpdate ? " oMoMoMoMo... Update " : " oMoMoMoMo... ")))
+  p.intro(color.bgMagenta(color.white(isUpdate ? " oMoMoMoMo... 更新 " : " oMoMoMoMo... 安装 ")))
 
   if (isUpdate) {
     const initial = detectedToInitialValues(detected)
-    p.log.info(`Existing configuration detected: Claude=${initial.claude}, Gemini=${initial.gemini}`)
+    p.log.info(`检测到已有配置：Claude=${initial.claude}, Gemini=${initial.gemini}`)
   }
 
   const s = p.spinner()
-  s.start("Checking OpenCode installation")
+  s.start("检查 OpenCode 安装情况")
 
   const installed = await isOpenCodeInstalled()
   const version = await getOpenCodeVersion()
   if (!installed) {
-    s.stop(`OpenCode binary not found ${color.yellow("[!]")}`)
-    p.log.warn("OpenCode binary not found. Plugin will be configured, but you'll need to install OpenCode to use it.")
-    p.note("Visit https://opencode.ai/docs for installation instructions", "Installation Guide")
+    s.stop(`未找到 OpenCode 可执行文件 ${color.yellow("[!]")}`)
+    p.log.warn("未找到 OpenCode 可执行文件。会继续配置插件，但你需要先安装 OpenCode 才能使用。")
+    p.note("安装说明：https://opencode.ai/docs", "安装指南")
   } else {
-    s.stop(`OpenCode ${version ?? "installed"} ${color.green("[OK]")}`)
+    s.stop(`OpenCode ${version ?? "已安装"} ${color.green("[OK]")}`)
   }
 
   const config = await runTuiMode(detected)
   if (!config) return 1
 
-  s.start("Adding oh-my-opencode to OpenCode config")
+  s.start("将 oh-my-opencode 写入 OpenCode 配置")
   const pluginResult = await addPluginToOpenCodeConfig(VERSION)
   if (!pluginResult.success) {
-    s.stop(`Failed to add plugin: ${pluginResult.error}`)
-    p.outro(color.red("Installation failed."))
+    s.stop(`添加插件失败：${pluginResult.error}`)
+    p.outro(color.red("安装失败。"))
     return 1
   }
-  s.stop(`Plugin added to ${color.cyan(pluginResult.configPath)}`)
+  s.stop(`插件已写入 ${color.cyan(pluginResult.configPath)}`)
 
   if (config.hasGemini) {
-    s.start("Adding auth plugins (fetching latest versions)")
+    s.start("添加认证插件（获取最新版本）")
     const authResult = await addAuthPlugins(config)
     if (!authResult.success) {
-      s.stop(`Failed to add auth plugins: ${authResult.error}`)
-      p.outro(color.red("Installation failed."))
+      s.stop(`添加认证插件失败：${authResult.error}`)
+      p.outro(color.red("安装失败。"))
       return 1
     }
-    s.stop(`Auth plugins added to ${color.cyan(authResult.configPath)}`)
+    s.stop(`认证插件已写入 ${color.cyan(authResult.configPath)}`)
 
-    s.start("Adding provider configurations")
+    s.start("添加 Provider 配置")
     const providerResult = addProviderConfig(config)
     if (!providerResult.success) {
-      s.stop(`Failed to add provider config: ${providerResult.error}`)
-      p.outro(color.red("Installation failed."))
+      s.stop(`添加 Provider 配置失败：${providerResult.error}`)
+      p.outro(color.red("安装失败。"))
       return 1
     }
-    s.stop(`Provider config added to ${color.cyan(providerResult.configPath)}`)
+    s.stop(`Provider 配置已写入 ${color.cyan(providerResult.configPath)}`)
   }
 
-  s.start("Writing oh-my-opencode configuration")
+  s.start("写入 oh-my-opencode 配置")
   const omoResult = writeOmoConfig(config)
   if (!omoResult.success) {
-    s.stop(`Failed to write config: ${omoResult.error}`)
-    p.outro(color.red("Installation failed."))
+    s.stop(`写入配置失败：${omoResult.error}`)
+    p.outro(color.red("安装失败。"))
     return 1
   }
-  s.stop(`Config written to ${color.cyan(omoResult.configPath)}`)
+  s.stop(`配置已写入 ${color.cyan(omoResult.configPath)}`)
 
   if (!config.hasClaude) {
     console.log()
-    console.log(color.bgRed(color.white(color.bold(" CRITICAL WARNING "))))
+    console.log(color.bgRed(color.white(color.bold(" 重要警告 "))))
     console.log()
-    console.log(color.red(color.bold("  Sisyphus agent is STRONGLY optimized for Claude Opus 4.5.")))
-    console.log(color.red("  Without Claude, you may experience significantly degraded performance:"))
-    console.log(color.dim("    • Reduced orchestration quality"))
-    console.log(color.dim("    • Weaker tool selection and delegation"))
-    console.log(color.dim("    • Less reliable task completion"))
+    console.log(color.red(color.bold("  Sisyphus 代理强烈建议搭配 Claude Opus 4.5 使用。")))
+    console.log(color.red("  若未配置 Claude，你可能会遇到明显的性能下降："))
+    console.log(color.dim("    • 编排质量降低"))
+    console.log(color.dim("    • 工具选择与委托更弱"))
+    console.log(color.dim("    • 任务完成可靠性下降"))
     console.log()
-    console.log(color.yellow("  Consider subscribing to Claude Pro/Max for the best experience."))
+    console.log(color.yellow("  建议订阅 Claude Pro/Max 以获得最佳体验。"))
     console.log()
   }
 
   if (!config.hasClaude && !config.hasOpenAI && !config.hasGemini && !config.hasCopilot && !config.hasOpencodeZen) {
-    p.log.warn("No model providers configured. Using opencode/big-pickle as fallback.")
+    p.log.warn("未配置任何模型 Provider，将使用 opencode/big-pickle 作为回退。")
   }
 
-  p.note(formatConfigSummary(config), isUpdate ? "Updated Configuration" : "Installation Complete")
+  p.note(formatConfigSummary(config), isUpdate ? "配置已更新" : "安装完成")
 
-  p.log.success(color.bold(isUpdate ? "Configuration updated!" : "Installation complete!"))
-  p.log.message(`Run ${color.cyan("opencode")} to start!`)
+  p.log.success(color.bold(isUpdate ? "配置已更新！" : "安装完成！"))
+  p.log.message(`运行 ${color.cyan("opencode")} 即可开始！`)
 
   p.note(
-    `Include ${color.cyan("ultrawork")} (or ${color.cyan("ulw")}) in your prompt.\n` +
-    `All features work like magic—parallel agents, background tasks,\n` +
-    `deep exploration, and relentless execution until completion.`,
-    "The Magic Word"
+    `在提示词中加入 ${color.cyan("ultrawork")}（或 ${color.cyan("ulw")}）。\n` +
+    `所有能力将像“开挂”一样生效：并行代理、后台任务、\n` +
+    `深度探索，以及不达目标不罢休的执行。`,
+    "魔法关键词"
   )
 
-  p.log.message(`${color.yellow("★")} If you found this helpful, consider starring the repo!`)
+  p.log.message(`${color.yellow("★")} 如果对你有帮助，欢迎给仓库点个 Star！`)
   p.log.message(`  ${color.dim("gh repo star code-yeongyu/oh-my-opencode")}`)
 
-  p.outro(color.green("oMoMoMoMo... Enjoy!"))
+  p.outro(color.green("oMoMoMoMo... 尽情享用！"))
 
   if ((config.hasClaude || config.hasGemini || config.hasCopilot) && !args.skipAuth) {
     const providers: string[] = []
@@ -507,9 +507,9 @@ export async function install(args: InstallArgs): Promise<number> {
     if (config.hasCopilot) providers.push(`GitHub ${color.gray("→ Copilot")}`)
 
     console.log()
-    console.log(color.bold("Authenticate Your Providers"))
+    console.log(color.bold("认证你的 Provider"))
     console.log()
-    console.log(`   Run ${color.cyan("opencode auth login")} and select:`)
+    console.log(`   运行 ${color.cyan("opencode auth login")} 并选择：`)
     for (const provider of providers) {
       console.log(`   ${SYMBOLS.bullet} ${provider}`)
     }

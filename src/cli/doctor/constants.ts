@@ -36,30 +36,30 @@ export const CHECK_IDS = {
 } as const
 
 export const CHECK_NAMES: Record<string, string> = {
-  [CHECK_IDS.OPENCODE_INSTALLATION]: "OpenCode Installation",
-  [CHECK_IDS.PLUGIN_REGISTRATION]: "Plugin Registration",
-  [CHECK_IDS.CONFIG_VALIDATION]: "Configuration Validity",
-  [CHECK_IDS.MODEL_RESOLUTION]: "Model Resolution",
-  [CHECK_IDS.AUTH_ANTHROPIC]: "Anthropic (Claude) Auth",
-  [CHECK_IDS.AUTH_OPENAI]: "OpenAI (ChatGPT) Auth",
-  [CHECK_IDS.AUTH_GOOGLE]: "Google (Gemini) Auth",
+  [CHECK_IDS.OPENCODE_INSTALLATION]: "OpenCode 安装",
+  [CHECK_IDS.PLUGIN_REGISTRATION]: "插件注册",
+  [CHECK_IDS.CONFIG_VALIDATION]: "配置有效性",
+  [CHECK_IDS.MODEL_RESOLUTION]: "模型解析",
+  [CHECK_IDS.AUTH_ANTHROPIC]: "Anthropic（Claude）认证",
+  [CHECK_IDS.AUTH_OPENAI]: "OpenAI（ChatGPT）认证",
+  [CHECK_IDS.AUTH_GOOGLE]: "Google（Gemini）认证",
   [CHECK_IDS.DEP_AST_GREP_CLI]: "AST-Grep CLI",
   [CHECK_IDS.DEP_AST_GREP_NAPI]: "AST-Grep NAPI",
-  [CHECK_IDS.DEP_COMMENT_CHECKER]: "Comment Checker",
+  [CHECK_IDS.DEP_COMMENT_CHECKER]: "注释检查器",
   [CHECK_IDS.GH_CLI]: "GitHub CLI",
-  [CHECK_IDS.LSP_SERVERS]: "LSP Servers",
-  [CHECK_IDS.MCP_BUILTIN]: "Built-in MCP Servers",
-  [CHECK_IDS.MCP_USER]: "User MCP Configuration",
-  [CHECK_IDS.VERSION_STATUS]: "Version Status",
+  [CHECK_IDS.LSP_SERVERS]: "LSP 服务器",
+  [CHECK_IDS.MCP_BUILTIN]: "内置 MCP 服务器",
+  [CHECK_IDS.MCP_USER]: "用户 MCP 配置",
+  [CHECK_IDS.VERSION_STATUS]: "版本状态",
 } as const
 
 export const CATEGORY_NAMES: Record<string, string> = {
-  installation: "Installation",
-  configuration: "Configuration",
-  authentication: "Authentication",
-  dependencies: "Dependencies",
-  tools: "Tools & Servers",
-  updates: "Updates",
+  installation: "安装",
+  configuration: "配置",
+  authentication: "认证",
+  dependencies: "依赖",
+  tools: "工具与服务器",
+  updates: "更新",
 } as const
 
 export const EXIT_CODES = {

@@ -20,9 +20,7 @@ export function createSubagentQuestionBlockerHook(): Hooks {
       })
 
       throw new Error(
-        "Question tool is disabled for subagent sessions. " +
-        "Subagents should complete their work autonomously without asking questions to users. " +
-        "If you need clarification, return to the parent agent with your findings and uncertainties."
+        "子代理会话中已禁用 Question 工具。子代理应自主完成工作，不应直接向用户提问。若需要澄清，请带着你的发现与不确定点返回父代理。"
       )
     },
   }

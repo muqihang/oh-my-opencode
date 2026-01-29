@@ -35,7 +35,7 @@ describe("dependencies check", () => {
       const info = await deps.checkCommentChecker()
 
       // #then should return valid info
-      expect(info.name).toBe("Comment Checker")
+      expect(info.name).toBe("注释检查器")
       expect(info.required).toBe(false)
       expect(typeof info.installed).toBe("boolean")
     })
@@ -82,7 +82,7 @@ describe("dependencies check", () => {
 
       // #then should warn (optional)
       expect(result.status).toBe("warn")
-      expect(result.message).toContain("optional")
+      expect(result.message).toContain("可选")
     })
   })
 

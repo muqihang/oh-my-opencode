@@ -71,6 +71,6 @@ describe("slashcommand tool - synchronous description", () => {
     const tool = createSlashcommandTool({ commands: [], skills: [] })
 
     // #then - even with no items, description should be built synchronously (not just prefix)
-    expect(tool.description).toContain("Load a skill")
+    expect(tool.description).toContain("加载一个技能")
   })
 })

@@ -42,41 +42,41 @@ export function formatCategoryHeader(category: CheckCategory): string {
 export function formatSummary(summary: DoctorSummary): string {
   const lines: string[] = []
 
-  lines.push(color.bold(color.white("Summary")))
+  lines.push(color.bold(color.white("摘要")))
   lines.push(color.dim("\u2500".repeat(40)))
   lines.push("")
 
-  const passText = summary.passed > 0 ? color.green(`${summary.passed} passed`) : color.dim("0 passed")
-  const failText = summary.failed > 0 ? color.red(`${summary.failed} failed`) : color.dim("0 failed")
-  const warnText = summary.warnings > 0 ? color.yellow(`${summary.warnings} warnings`) : color.dim("0 warnings")
-  const skipText = summary.skipped > 0 ? color.dim(`${summary.skipped} skipped`) : ""
+  const passText = summary.passed > 0 ? color.green(`${summary.passed} 通过`) : color.dim("0 通过")
+  const failText = summary.failed > 0 ? color.red(`${summary.failed} 失败`) : color.dim("0 失败")
+  const warnText = summary.warnings > 0 ? color.yellow(`${summary.warnings} 警告`) : color.dim("0 警告")
+  const skipText = summary.skipped > 0 ? color.dim(`${summary.skipped} 跳过`) : ""
 
   const parts = [passText, failText, warnText]
   if (skipText) parts.push(skipText)
 
   lines.push(`  ${parts.join(", ")}`)
-  lines.push(`  ${color.dim(`Total: ${summary.total} checks in ${summary.duration}ms`)}`)
+  lines.push(`  ${color.dim(`总计：${summary.total} 项检查，用时 ${summary.duration}ms`)}`)
 
   return lines.join("\n")
 }
 
 export function formatHeader(): string {
-  return `\n${color.bgMagenta(color.white(" oMoMoMoMo... Doctor "))}\n`
+  return `\n${color.bgMagenta(color.white(" oMoMoMoMo... Doctor（诊断） "))}\n`
 }
 
 export function formatFooter(summary: DoctorSummary): string {
   if (summary.failed > 0) {
-    return `\n${SYMBOLS.cross} ${color.red("Issues detected. Please review the errors above.")}\n`
+    return `\n${SYMBOLS.cross} ${color.red("检测到问题，请查看以上错误。")}\n`
   }
   if (summary.warnings > 0) {
-    return `\n${SYMBOLS.warn} ${color.yellow("All systems operational with warnings.")}\n`
+    return `\n${SYMBOLS.warn} ${color.yellow("系统可用，但存在警告。")}\n`
   }
-  return `\n${SYMBOLS.check} ${color.green("All systems operational!")}\n`
+  return `\n${SYMBOLS.check} ${color.green("系统一切正常！")}\n`
 }
 
 export function formatProgress(current: number, total: number, name: string): string {
   const progress = color.dim(`[${current}/${total}]`)
-  return `${progress} Checking ${name}...`
+  return `${progress} 检查 ${name}...`
 }
 
 export function formatJsonOutput(result: DoctorResult): string {
@@ -129,7 +129,14 @@ export function formatHelpSuggestions(results: CheckResult[]): string[] {
   for (const result of results) {
     if (result.status === "fail" && result.details) {
       for (const detail of result.details) {
-        if (detail.includes("Run:") || detail.includes("Install:") || detail.includes("Visit:")) {
+        if (
+          detail.includes("Run:") ||
+          detail.includes("Install:") ||
+          detail.includes("Visit:") ||
+          detail.includes("运行：") ||
+          detail.includes("安装：") ||
+          detail.includes("安装说明：")
+        ) {
           suggestions.push(detail)
         }
       }

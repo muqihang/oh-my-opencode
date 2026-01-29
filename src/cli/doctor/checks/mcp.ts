@@ -57,7 +57,7 @@ export function getUserMcpInfo(): McpServerInfo[] {
       type: "user",
       enabled: true,
       valid: isValid,
-      error: isValid ? undefined : "Invalid configuration format",
+      error: isValid ? undefined : "配置格式无效",
     })
   }
 
@@ -70,8 +70,8 @@ export async function checkBuiltinMcpServers(): Promise<CheckResult> {
   return {
     name: CHECK_NAMES[CHECK_IDS.MCP_BUILTIN],
     status: "pass",
-    message: `${servers.length} built-in servers enabled`,
-    details: servers.map((s) => `Enabled: ${s.id}`),
+    message: `已启用 ${servers.length} 个内置服务器`,
+    details: servers.map((s) => `已启用：${s.id}`),
   }
 }
 
@@ -82,8 +82,8 @@ export async function checkUserMcpServers(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.MCP_USER],
       status: "skip",
-      message: "No user MCP configuration found",
-      details: ["Optional: Add .mcp.json for custom MCP servers"],
+      message: "未找到用户 MCP 配置",
+      details: ["可选：添加 .mcp.json 以配置自定义 MCP 服务器"],
     }
   }
 
@@ -92,10 +92,10 @@ export async function checkUserMcpServers(): Promise<CheckResult> {
     return {
       name: CHECK_NAMES[CHECK_IDS.MCP_USER],
       status: "warn",
-      message: `${invalidServers.length} server(s) have configuration issues`,
+      message: `有 ${invalidServers.length} 个服务器存在配置问题`,
       details: [
-        ...servers.filter((s) => s.valid).map((s) => `Valid: ${s.id}`),
-        ...invalidServers.map((s) => `Invalid: ${s.id} - ${s.error}`),
+        ...servers.filter((s) => s.valid).map((s) => `有效：${s.id}`),
+        ...invalidServers.map((s) => `无效：${s.id} - ${s.error}`),
       ],
     }
   }
@@ -103,8 +103,8 @@ export async function checkUserMcpServers(): Promise<CheckResult> {
   return {
     name: CHECK_NAMES[CHECK_IDS.MCP_USER],
     status: "pass",
-    message: `${servers.length} user server(s) configured`,
-    details: servers.map((s) => `Configured: ${s.id}`),
+    message: `已配置 ${servers.length} 个用户服务器`,
+    details: servers.map((s) => `已配置：${s.id}`),
   }
 }
 

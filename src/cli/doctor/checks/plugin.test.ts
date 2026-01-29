@@ -35,7 +35,7 @@ describe("plugin check", () => {
 
       // #then should fail with hint
       expect(result.status).toBe("fail")
-      expect(result.message).toContain("not found")
+      expect(result.message).toContain("未找到")
     })
 
     it("returns fail when plugin not registered", async () => {
@@ -53,7 +53,7 @@ describe("plugin check", () => {
 
       // #then should fail
       expect(result.status).toBe("fail")
-      expect(result.message).toContain("not registered")
+      expect(result.message).toContain("未注册")
     })
 
     it("returns pass when plugin registered", async () => {
@@ -71,7 +71,7 @@ describe("plugin check", () => {
 
       // #then should pass
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("Registered")
+      expect(result.message).toContain("已注册")
     })
 
     it("indicates pinned version when applicable", async () => {
@@ -89,7 +89,7 @@ describe("plugin check", () => {
 
       // #then should show pinned version
       expect(result.status).toBe("pass")
-      expect(result.message).toContain("pinned")
+      expect(result.message).toContain("固定版本")
       expect(result.message).toContain("2.7.0")
     })
   })
