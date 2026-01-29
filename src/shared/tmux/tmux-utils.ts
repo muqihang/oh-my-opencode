@@ -125,7 +125,6 @@ export async function spawnTmuxPane(
     "-P",
     "-F",
     "#{pane_id}",
-    "-l", String(config.agent_pane_min_width),
     ...(targetPaneId ? ["-t", targetPaneId] : []),
     opencodeCmd,
   ]
@@ -180,19 +179,88 @@ export async function closeTmuxPane(paneId: string): Promise<boolean> {
   return exitCode === 0
 }
 
+export async function replaceTmuxPane(
+  paneId: string,
+  sessionId: string,
+  description: string,
+  config: TmuxConfig,
+  serverUrl: string
+): Promise<SpawnPaneResult> {
+  const { log } = await import("../logger")
+  
+  log("[replaceTmuxPane] called", { paneId, sessionId, description })
+  
+  if (!config.enabled) {
+    return { success: false }
+  }
+  if (!isInsideTmux()) {
+    return { success: false }
+  }
+
+  const tmux = await getTmuxPath()
+  if (!tmux) {
+    return { success: false }
+  }
+
+  const opencodeCmd = `opencode attach ${serverUrl} --session ${sessionId}`
+
+  const proc = spawn([tmux, "respawn-pane", "-k", "-t", paneId, opencodeCmd], {
+    stdout: "pipe",
+    stderr: "pipe",
+  })
+  const exitCode = await proc.exited
+
+  if (exitCode !== 0) {
+    const stderr = await new Response(proc.stderr).text()
+    log("[replaceTmuxPane] FAILED", { paneId, exitCode, stderr: stderr.trim() })
+    return { success: false }
+  }
+
+  const title = `omo-subagent-${description.slice(0, 20)}`
+  spawn([tmux, "select-pane", "-t", paneId, "-T", title], {
+    stdout: "ignore",
+    stderr: "ignore",
+  })
+
+  log("[replaceTmuxPane] SUCCESS", { paneId, sessionId })
+  return { success: true, paneId }
+}
+
 export async function applyLayout(
   tmux: string,
   layout: TmuxLayout,
   mainPaneSize: number
 ): Promise<void> {
-  spawn([tmux, "select-layout", layout], { stdout: "ignore", stderr: "ignore" })
+  const layoutProc = spawn([tmux, "select-layout", layout], { stdout: "ignore", stderr: "ignore" })
+  await layoutProc.exited
 
   if (layout.startsWith("main-")) {
     const dimension =
       layout === "main-horizontal" ? "main-pane-height" : "main-pane-width"
-    spawn([tmux, "set-window-option", dimension, `${mainPaneSize}%`], {
+    const sizeProc = spawn([tmux, "set-window-option", dimension, `${mainPaneSize}%`], {
       stdout: "ignore",
       stderr: "ignore",
     })
+    await sizeProc.exited
   }
+}
+
+export async function enforceMainPaneWidth(
+  mainPaneId: string,
+  windowWidth: number
+): Promise<void> {
+  const { log } = await import("../logger")
+  const tmux = await getTmuxPath()
+  if (!tmux) return
+
+  const DIVIDER_WIDTH = 1
+  const mainWidth = Math.floor((windowWidth - DIVIDER_WIDTH) / 2)
+  
+  const proc = spawn([tmux, "resize-pane", "-t", mainPaneId, "-x", String(mainWidth)], {
+    stdout: "ignore",
+    stderr: "ignore",
+  })
+  await proc.exited
+  
+  log("[enforceMainPaneWidth] main pane resized", { mainPaneId, mainWidth, windowWidth })
 }

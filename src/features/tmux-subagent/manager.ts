@@ -178,11 +178,11 @@ export class TmuxSessionManager {
         canSpawn: decision.canSpawn,
         reason: decision.reason,
         actionCount: decision.actions.length,
-        actions: decision.actions.map((a) =>
-          a.type === "close"
-            ? { type: "close", paneId: a.paneId }
-            : { type: "spawn", sessionId: a.sessionId }
-        ),
+        actions: decision.actions.map((a) => {
+          if (a.type === "close") return { type: "close", paneId: a.paneId }
+          if (a.type === "replace") return { type: "replace", paneId: a.paneId, newSessionId: a.newSessionId }
+          return { type: "spawn", sessionId: a.sessionId }
+        }),
       })
 
       if (!decision.canSpawn) {
@@ -192,8 +192,7 @@ export class TmuxSessionManager {
 
       const result = await executeActions(
         decision.actions,
-        this.tmuxConfig,
-        this.serverUrl
+        { config: this.tmuxConfig, serverUrl: this.serverUrl, windowState: state }
       )
 
       for (const { action, result: actionResult } of result.results) {
@@ -201,6 +200,13 @@ export class TmuxSessionManager {
           this.sessions.delete(action.sessionId)
           log("[tmux-session-manager] removed closed session from cache", {
             sessionId: action.sessionId,
+          })
+        }
+        if (action.type === "replace" && actionResult.success) {
+          this.sessions.delete(action.oldSessionId)
+          log("[tmux-session-manager] removed replaced session from cache", {
+            oldSessionId: action.oldSessionId,
+            newSessionId: action.newSessionId,
           })
         }
       }
@@ -261,7 +267,7 @@ export class TmuxSessionManager {
 
     const closeAction = decideCloseAction(state, event.sessionID, this.getSessionMappings())
     if (closeAction) {
-      await executeAction(closeAction, this.tmuxConfig, this.serverUrl)
+      await executeAction(closeAction, { config: this.tmuxConfig, serverUrl: this.serverUrl, windowState: state })
     }
 
     this.sessions.delete(event.sessionID)
@@ -352,11 +358,13 @@ export class TmuxSessionManager {
       paneId: tracked.paneId,
     })
 
-    await executeAction(
-      { type: "close", paneId: tracked.paneId, sessionId },
-      this.tmuxConfig,
-      this.serverUrl
-    )
+    const state = this.sourcePaneId ? await queryWindowState(this.sourcePaneId) : null
+    if (state) {
+      await executeAction(
+        { type: "close", paneId: tracked.paneId, sessionId },
+        { config: this.tmuxConfig, serverUrl: this.serverUrl, windowState: state }
+      )
+    }
 
     this.sessions.delete(sessionId)
 
@@ -376,19 +384,22 @@ export class TmuxSessionManager {
 
     if (this.sessions.size > 0) {
       log("[tmux-session-manager] closing all panes", { count: this.sessions.size })
-      const closePromises = Array.from(this.sessions.values()).map((s) =>
-        executeAction(
-          { type: "close", paneId: s.paneId, sessionId: s.sessionId },
-          this.tmuxConfig,
-          this.serverUrl
-        ).catch((err) =>
-          log("[tmux-session-manager] cleanup error for pane", {
-            paneId: s.paneId,
-            error: String(err),
-          }),
-        ),
-      )
-      await Promise.all(closePromises)
+      const state = this.sourcePaneId ? await queryWindowState(this.sourcePaneId) : null
+      
+      if (state) {
+        const closePromises = Array.from(this.sessions.values()).map((s) =>
+          executeAction(
+            { type: "close", paneId: s.paneId, sessionId: s.sessionId },
+            { config: this.tmuxConfig, serverUrl: this.serverUrl, windowState: state }
+          ).catch((err) =>
+            log("[tmux-session-manager] cleanup error for pane", {
+              paneId: s.paneId,
+              error: String(err),
+            }),
+          ),
+        )
+        await Promise.all(closePromises)
+      }
       this.sessions.clear()
     }
 
