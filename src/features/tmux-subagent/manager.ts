@@ -212,15 +212,6 @@ export class TmuxSessionManager {
       }
 
       if (result.success && result.spawnedPaneId) {
-        const sessionReady = await this.waitForSessionReady(sessionId)
-        
-        if (!sessionReady) {
-          log("[tmux-session-manager] session not ready after timeout, tracking anyway", {
-            sessionId,
-            paneId: result.spawnedPaneId,
-          })
-        }
-        
         const now = Date.now()
         this.sessions.set(sessionId, {
           sessionId,
@@ -232,9 +223,29 @@ export class TmuxSessionManager {
         log("[tmux-session-manager] pane spawned and tracked", {
           sessionId,
           paneId: result.spawnedPaneId,
-          sessionReady,
         })
         this.startPolling()
+
+        void this.waitForSessionReady(sessionId)
+          .then((sessionReady) => {
+            if (!sessionReady) {
+              log("[tmux-session-manager] session not ready after timeout", {
+                sessionId,
+                paneId: result.spawnedPaneId,
+              })
+              return
+            }
+            log("[tmux-session-manager] session ready after spawn", {
+              sessionId,
+              paneId: result.spawnedPaneId,
+            })
+          })
+          .catch((err) => {
+            log("[tmux-session-manager] session readiness check failed", {
+              sessionId,
+              error: String(err),
+            })
+          })
       } else {
         log("[tmux-session-manager] spawn failed", {
           success: result.success,

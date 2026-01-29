@@ -36,10 +36,42 @@ import { DEFAULT_CATEGORIES } from "../tools/delegate-task/constants";
 import type { ModelCacheState } from "../plugin-state";
 import type { CategoryConfig } from "../config/schema";
 
+export interface ConfigHandlerOverrides {
+  createBuiltinAgents: typeof createBuiltinAgents;
+  createSisyphusJuniorAgentWithOverrides: typeof createSisyphusJuniorAgentWithOverrides;
+  loadUserCommands: typeof loadUserCommands;
+  loadProjectCommands: typeof loadProjectCommands;
+  loadOpencodeGlobalCommands: typeof loadOpencodeGlobalCommands;
+  loadOpencodeProjectCommands: typeof loadOpencodeProjectCommands;
+  loadBuiltinCommands: typeof loadBuiltinCommands;
+  loadUserSkills: typeof loadUserSkills;
+  loadProjectSkills: typeof loadProjectSkills;
+  loadOpencodeGlobalSkills: typeof loadOpencodeGlobalSkills;
+  loadOpencodeProjectSkills: typeof loadOpencodeProjectSkills;
+  discoverUserClaudeSkills: typeof discoverUserClaudeSkills;
+  discoverProjectClaudeSkills: typeof discoverProjectClaudeSkills;
+  discoverOpencodeGlobalSkills: typeof discoverOpencodeGlobalSkills;
+  discoverOpencodeProjectSkills: typeof discoverOpencodeProjectSkills;
+  loadUserAgents: typeof loadUserAgents;
+  loadProjectAgents: typeof loadProjectAgents;
+  loadMcpConfigs: typeof loadMcpConfigs;
+  loadAllPluginComponents: typeof loadAllPluginComponents;
+  createBuiltinMcps: typeof createBuiltinMcps;
+  log: typeof log;
+  fetchAvailableModels: typeof fetchAvailableModels;
+  readConnectedProvidersCache: typeof readConnectedProvidersCache;
+  getOpenCodeConfigPaths: typeof getOpenCodeConfigPaths;
+  migrateAgentConfig: typeof migrateAgentConfig;
+  AGENT_NAME_MAP: typeof AGENT_NAME_MAP;
+  resolveModelWithFallback: typeof resolveModelWithFallback;
+  AGENT_MODEL_REQUIREMENTS: typeof AGENT_MODEL_REQUIREMENTS;
+}
+
 export interface ConfigHandlerDeps {
   ctx: { directory: string; client?: any };
   pluginConfig: OhMyOpenCodeConfig;
   modelCacheState: ModelCacheState;
+  overrides?: Partial<ConfigHandlerOverrides>;
 }
 
 export function resolveCategoryConfig(
@@ -51,6 +83,37 @@ export function resolveCategoryConfig(
 
 export function createConfigHandler(deps: ConfigHandlerDeps) {
   const { ctx, pluginConfig, modelCacheState } = deps;
+  const impl: ConfigHandlerOverrides = {
+    createBuiltinAgents,
+    createSisyphusJuniorAgentWithOverrides,
+    loadUserCommands,
+    loadProjectCommands,
+    loadOpencodeGlobalCommands,
+    loadOpencodeProjectCommands,
+    loadBuiltinCommands,
+    loadUserSkills,
+    loadProjectSkills,
+    loadOpencodeGlobalSkills,
+    loadOpencodeProjectSkills,
+    discoverUserClaudeSkills,
+    discoverProjectClaudeSkills,
+    discoverOpencodeGlobalSkills,
+    discoverOpencodeProjectSkills,
+    loadUserAgents,
+    loadProjectAgents,
+    loadMcpConfigs,
+    loadAllPluginComponents,
+    createBuiltinMcps,
+    log,
+    fetchAvailableModels,
+    readConnectedProvidersCache,
+    getOpenCodeConfigPaths,
+    migrateAgentConfig,
+    AGENT_NAME_MAP,
+    resolveModelWithFallback,
+    AGENT_MODEL_REQUIREMENTS,
+    ...deps.overrides,
+  };
 
   return async (config: Record<string, unknown>) => {
     type ProviderConfig = {
@@ -84,7 +147,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
     }
 
     const pluginComponents = (pluginConfig.claude_code?.plugins ?? true)
-      ? await loadAllPluginComponents({
+      ? await impl.loadAllPluginComponents({
           enabledPluginsOverride: pluginConfig.claude_code?.plugins_override,
         })
       : {
@@ -98,18 +161,18 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
         };
 
     if (pluginComponents.plugins.length > 0) {
-      log(`Loaded ${pluginComponents.plugins.length} Claude Code plugins`, {
+      impl.log(`Loaded ${pluginComponents.plugins.length} Claude Code plugins`, {
         plugins: pluginComponents.plugins.map((p) => `${p.name}@${p.version}`),
       });
     }
 
     if (pluginComponents.errors.length > 0) {
-      log(`Plugin load errors`, { errors: pluginComponents.errors });
+      impl.log(`Plugin load errors`, { errors: pluginComponents.errors });
     }
 
     // Migrate disabled_agents from old names to new names
     const migratedDisabledAgents = (pluginConfig.disabled_agents ?? []).map(agent => {
-      return AGENT_NAME_MAP[agent.toLowerCase()] ?? AGENT_NAME_MAP[agent] ?? agent
+      return impl.AGENT_NAME_MAP[agent.toLowerCase()] ?? impl.AGENT_NAME_MAP[agent] ?? agent
     }) as typeof pluginConfig.disabled_agents
 
     const includeClaudeSkillsForAwareness = pluginConfig.claude_code?.skills ?? true;
@@ -119,10 +182,10 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       discoveredOpencodeGlobalSkills,
       discoveredOpencodeProjectSkills,
     ] = await Promise.all([
-      includeClaudeSkillsForAwareness ? discoverUserClaudeSkills() : Promise.resolve([]),
-      includeClaudeSkillsForAwareness ? discoverProjectClaudeSkills() : Promise.resolve([]),
-      discoverOpencodeGlobalSkills(),
-      discoverOpencodeProjectSkills(),
+      includeClaudeSkillsForAwareness ? impl.discoverUserClaudeSkills() : Promise.resolve([]),
+      includeClaudeSkillsForAwareness ? impl.discoverProjectClaudeSkills() : Promise.resolve([]),
+      impl.discoverOpencodeGlobalSkills(),
+      impl.discoverOpencodeProjectSkills(),
     ]);
 
     const allDiscoveredSkills = [
@@ -136,7 +199,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
     // config.model represents the currently active model in OpenCode (including UI selection)
     // Pass it as uiSelectedModel so it takes highest priority in model resolution
     const currentModel = config.model as string | undefined;
-    const builtinAgents = await createBuiltinAgents(
+    const builtinAgents = await impl.createBuiltinAgents(
       migratedDisabledAgents,
       pluginConfig.agents,
       ctx.directory,
@@ -153,10 +216,10 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
     // Claude Code uses whitelist-based tools format which is semantically different
     // from OpenCode's denylist-based permission system
     const userAgents = (pluginConfig.claude_code?.agents ?? true)
-      ? loadUserAgents()
+      ? impl.loadUserAgents()
       : {};
     const projectAgents = (pluginConfig.claude_code?.agents ?? true)
-      ? loadProjectAgents()
+      ? impl.loadProjectAgents()
       : {};
 
     // Plugin agents: Apply permission migration for compatibility
@@ -164,7 +227,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
     const pluginAgents = Object.fromEntries(
       Object.entries(rawPluginAgents).map(([k, v]) => [
         k,
-        v ? migrateAgentConfig(v as Record<string, unknown>) : v,
+        v ? impl.migrateAgentConfig(v as Record<string, unknown>) : v,
       ])
     );
 
@@ -196,7 +259,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
         sisyphus: builtinAgents.sisyphus,
       };
 
-      agentConfig["sisyphus-junior"] = createSisyphusJuniorAgentWithOverrides(
+      agentConfig["sisyphus-junior"] = impl.createSisyphusJuniorAgentWithOverrides(
         pluginConfig.agents?.["sisyphus-junior"],
         config.model as string | undefined
       );
@@ -204,7 +267,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       if (builderEnabled) {
         const { name: _buildName, ...buildConfigWithoutName } =
           configAgent?.build ?? {};
-        const migratedBuildConfig = migrateAgentConfig(
+        const migratedBuildConfig = impl.migrateAgentConfig(
           buildConfigWithoutName as Record<string, unknown>
         );
         const openCodeBuilderOverride =
@@ -222,7 +285,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       if (plannerEnabled) {
         const { name: _planName, mode: _planMode, ...planConfigWithoutName } =
           configAgent?.plan ?? {};
-        const migratedPlanConfig = migrateAgentConfig(
+        const migratedPlanConfig = impl.migrateAgentConfig(
           planConfigWithoutName as Record<string, unknown>
         );
         const prometheusOverride =
@@ -237,13 +300,13 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
             )
           : undefined;
 
-        const prometheusRequirement = AGENT_MODEL_REQUIREMENTS["prometheus"];
-        const connectedProviders = readConnectedProvidersCache();
+        const prometheusRequirement = impl.AGENT_MODEL_REQUIREMENTS["prometheus"];
+        const connectedProviders = impl.readConnectedProvidersCache();
         const availableModels = ctx.client
-          ? await fetchAvailableModels(ctx.client, { connectedProviders: connectedProviders ?? undefined })
+          ? await impl.fetchAvailableModels(ctx.client, { connectedProviders: connectedProviders ?? undefined })
           : new Set<string>();
 
-        const modelResolution = resolveModelWithFallback({
+        const modelResolution = impl.resolveModelWithFallback({
           uiSelectedModel: currentModel,
           userModel: prometheusOverride?.model ?? categoryConfig?.model,
           fallbackChain: prometheusRequirement?.fallbackChain,
@@ -301,13 +364,13 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
             })
             .map(([key, value]) => [
               key,
-              value ? migrateAgentConfig(value as Record<string, unknown>) : value,
+              value ? impl.migrateAgentConfig(value as Record<string, unknown>) : value,
             ])
         )
       : {};
 
       const migratedBuild = configAgent?.build
-        ? migrateAgentConfig(configAgent.build as Record<string, unknown>)
+        ? impl.migrateAgentConfig(configAgent.build as Record<string, unknown>)
         : {};
 
       const planDemoteConfig = replacePlan && agentConfig["prometheus"]
@@ -385,17 +448,17 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
     };
 
     const mcpResult = (pluginConfig.claude_code?.mcp ?? true)
-      ? await loadMcpConfigs()
+      ? await impl.loadMcpConfigs()
       : { servers: {} };
 
     config.mcp = {
-      ...createBuiltinMcps(pluginConfig.disabled_mcps),
+      ...impl.createBuiltinMcps(pluginConfig.disabled_mcps),
       ...(config.mcp as Record<string, unknown>),
       ...mcpResult.servers,
       ...pluginComponents.mcpServers,
     };
 
-    const builtinCommands = loadBuiltinCommands(pluginConfig.disabled_commands);
+    const builtinCommands = impl.loadBuiltinCommands(pluginConfig.disabled_commands);
     const systemCommands = (config.command as Record<string, unknown>) ?? {};
 
     // Parallel loading of all commands and skills for faster startup
@@ -412,14 +475,14 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       opencodeGlobalSkills,
       opencodeProjectSkills,
     ] = await Promise.all([
-      includeClaudeCommands ? loadUserCommands() : Promise.resolve({}),
-      includeClaudeCommands ? loadProjectCommands() : Promise.resolve({}),
-      loadOpencodeGlobalCommands(),
-      loadOpencodeProjectCommands(),
-      includeClaudeSkills ? loadUserSkills() : Promise.resolve({}),
-      includeClaudeSkills ? loadProjectSkills() : Promise.resolve({}),
-      loadOpencodeGlobalSkills(),
-      loadOpencodeProjectSkills(),
+      includeClaudeCommands ? impl.loadUserCommands() : Promise.resolve({}),
+      includeClaudeCommands ? impl.loadProjectCommands() : Promise.resolve({}),
+      impl.loadOpencodeGlobalCommands(),
+      impl.loadOpencodeProjectCommands(),
+      includeClaudeSkills ? impl.loadUserSkills() : Promise.resolve({}),
+      includeClaudeSkills ? impl.loadProjectSkills() : Promise.resolve({}),
+      impl.loadOpencodeGlobalSkills(),
+      impl.loadOpencodeProjectSkills(),
     ]);
 
     config.command = {

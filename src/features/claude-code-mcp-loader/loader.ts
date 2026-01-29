@@ -15,9 +15,18 @@ interface McpConfigPath {
   scope: McpScope
 }
 
-function getMcpConfigPaths(): McpConfigPath[] {
-  const claudeConfigDir = getClaudeConfigDir()
-  const cwd = process.cwd()
+export interface ClaudeCodeMcpLoaderOptions {
+  /**
+   * Override Claude config dir (defaults to getClaudeConfigDir()).
+   * Useful for testing without mutating global environment variables.
+   */
+  claudeConfigDir?: string
+  cwd?: string
+}
+
+function getMcpConfigPaths(options: ClaudeCodeMcpLoaderOptions = {}): McpConfigPath[] {
+  const claudeConfigDir = options.claudeConfigDir ?? getClaudeConfigDir()
+  const cwd = options.cwd ?? process.cwd()
 
   return [
     { path: join(claudeConfigDir, ".mcp.json"), scope: "user" },
@@ -42,9 +51,9 @@ async function loadMcpConfigFile(
   }
 }
 
-export function getSystemMcpServerNames(): Set<string> {
+export function getSystemMcpServerNames(options: ClaudeCodeMcpLoaderOptions = {}): Set<string> {
   const names = new Set<string>()
-  const paths = getMcpConfigPaths()
+  const paths = getMcpConfigPaths(options)
 
   for (const { path } of paths) {
     if (!existsSync(path)) continue
@@ -66,10 +75,10 @@ export function getSystemMcpServerNames(): Set<string> {
   return names
 }
 
-export async function loadMcpConfigs(): Promise<McpLoadResult> {
+export async function loadMcpConfigs(options: ClaudeCodeMcpLoaderOptions = {}): Promise<McpLoadResult> {
   const servers: McpLoadResult["servers"] = {}
   const loadedServers: LoadedMcpServer[] = []
-  const paths = getMcpConfigPaths()
+  const paths = getMcpConfigPaths(options)
 
   for (const { path, scope } of paths) {
     const config = await loadMcpConfigFile(path)

@@ -1,55 +1,18 @@
-import { describe, test, expect, mock, beforeEach } from "bun:test"
+import { describe, test, expect } from "bun:test"
 import { resolveCategoryConfig, createConfigHandler } from "./config-handler"
 import type { CategoryConfig } from "../config/schema"
 import type { OhMyOpenCodeConfig } from "../config"
 
-mock.module("../agents", () => ({
+const testOverrides = {
   createBuiltinAgents: async () => ({
     sisyphus: { name: "sisyphus", prompt: "test", mode: "primary" },
     oracle: { name: "oracle", prompt: "test", mode: "subagent" },
   }),
-}))
-
-mock.module("../agents/sisyphus-junior", () => ({
   createSisyphusJuniorAgentWithOverrides: () => ({
     name: "sisyphus-junior",
     prompt: "test",
     mode: "subagent",
   }),
-}))
-
-mock.module("../features/claude-code-command-loader", () => ({
-  loadUserCommands: async () => ({}),
-  loadProjectCommands: async () => ({}),
-  loadOpencodeGlobalCommands: async () => ({}),
-  loadOpencodeProjectCommands: async () => ({}),
-}))
-
-mock.module("../features/builtin-commands", () => ({
-  loadBuiltinCommands: () => ({}),
-}))
-
-mock.module("../features/opencode-skill-loader", () => ({
-  loadUserSkills: async () => ({}),
-  loadProjectSkills: async () => ({}),
-  loadOpencodeGlobalSkills: async () => ({}),
-  loadOpencodeProjectSkills: async () => ({}),
-  discoverUserClaudeSkills: async () => [],
-  discoverProjectClaudeSkills: async () => [],
-  discoverOpencodeGlobalSkills: async () => [],
-  discoverOpencodeProjectSkills: async () => [],
-}))
-
-mock.module("../features/claude-code-agent-loader", () => ({
-  loadUserAgents: () => ({}),
-  loadProjectAgents: () => ({}),
-}))
-
-mock.module("../features/claude-code-mcp-loader", () => ({
-  loadMcpConfigs: async () => ({ servers: {} }),
-}))
-
-mock.module("../features/claude-code-plugin-loader", () => ({
   loadAllPluginComponents: async () => ({
     commands: {},
     skills: {},
@@ -59,59 +22,28 @@ mock.module("../features/claude-code-plugin-loader", () => ({
     plugins: [],
     errors: [],
   }),
-}))
-
-mock.module("../mcp", () => ({
+  loadMcpConfigs: async () => ({ servers: {} }),
   createBuiltinMcps: () => ({}),
-}))
-
-mock.module("../shared", () => ({
   log: () => {},
-  fetchAvailableModels: async () => new Set(["anthropic/claude-opus-4-5"]),
-  readConnectedProvidersCache: () => null,
-}))
-
-mock.module("../shared/opencode-config-dir", () => ({
-  getOpenCodeConfigPaths: () => ({
-    global: "/tmp/.config/opencode",
-    project: "/tmp/.opencode",
-  }),
-}))
-
-mock.module("../shared/permission-compat", () => ({
   migrateAgentConfig: (config: Record<string, unknown>) => config,
-}))
-
-mock.module("../shared/migration", () => ({
   AGENT_NAME_MAP: {},
-}))
-
-mock.module("../shared/model-resolver", () => ({
   resolveModelWithFallback: () => ({ model: "anthropic/claude-opus-4-5" }),
-}))
-
-mock.module("../shared/model-requirements", () => ({
-  AGENT_MODEL_REQUIREMENTS: {
-    sisyphus: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-opus-4-5" }] },
-    oracle: { fallbackChain: [{ providers: ["openai", "github-copilot", "opencode"], model: "gpt-5.2" }] },
-    librarian: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-sonnet-4-5" }] },
-    explore: { fallbackChain: [{ providers: ["anthropic", "opencode"], model: "claude-haiku-4-5" }] },
-    "multimodal-looker": { fallbackChain: [{ providers: ["google", "github-copilot", "opencode"], model: "gemini-3-flash" }] },
-    prometheus: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-opus-4-5" }] },
-    metis: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-opus-4-5" }] },
-    momus: { fallbackChain: [{ providers: ["openai", "github-copilot", "opencode"], model: "gpt-5.2" }] },
-    atlas: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-sonnet-4-5" }] },
-  },
-  CATEGORY_MODEL_REQUIREMENTS: {
-    "visual-engineering": { fallbackChain: [{ providers: ["google", "github-copilot", "opencode"], model: "gemini-3-pro" }] },
-    ultrabrain: { fallbackChain: [{ providers: ["openai", "github-copilot", "opencode"], model: "gpt-5.2-codex" }] },
-    artistry: { fallbackChain: [{ providers: ["google", "github-copilot", "opencode"], model: "gemini-3-pro" }] },
-    quick: { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-haiku-4-5" }] },
-    "unspecified-low": { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-sonnet-4-5" }] },
-    "unspecified-high": { fallbackChain: [{ providers: ["anthropic", "github-copilot", "opencode"], model: "claude-opus-4-5" }] },
-    writing: { fallbackChain: [{ providers: ["google", "github-copilot", "opencode"], model: "gemini-3-flash" }] },
-  },
-}))
+  loadBuiltinCommands: () => ({}),
+  loadUserCommands: async () => ({}),
+  loadProjectCommands: async () => ({}),
+  loadOpencodeGlobalCommands: async () => ({}),
+  loadOpencodeProjectCommands: async () => ({}),
+  loadUserSkills: async () => ({}),
+  loadProjectSkills: async () => ({}),
+  loadOpencodeGlobalSkills: async () => ({}),
+  loadOpencodeProjectSkills: async () => ({}),
+  discoverUserClaudeSkills: async () => [],
+  discoverProjectClaudeSkills: async () => [],
+  discoverOpencodeGlobalSkills: async () => [],
+  discoverOpencodeProjectSkills: async () => [],
+  loadUserAgents: () => ({}),
+  loadProjectAgents: () => ({}),
+}
 
 describe("Plan agent demote behavior", () => {
   test("plan agent should be demoted to subagent mode when replacePlan is true", async () => {
@@ -139,6 +71,7 @@ describe("Plan agent demote behavior", () => {
         anthropicContext1MEnabled: false,
         modelContextLimitsCache: new Map(),
       },
+      overrides: testOverrides,
     })
 
     // #when
@@ -169,6 +102,7 @@ describe("Plan agent demote behavior", () => {
         anthropicContext1MEnabled: false,
         modelContextLimitsCache: new Map(),
       },
+      overrides: testOverrides,
     })
 
     // #when

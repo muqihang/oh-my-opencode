@@ -49,28 +49,21 @@ This is the skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "test-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "test-skill")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.mcpConfig).toBeDefined()
-        expect(skill?.mcpConfig?.sqlite).toBeDefined()
-        expect(skill?.mcpConfig?.sqlite?.command).toBe("uvx")
-        expect(skill?.mcpConfig?.sqlite?.args).toEqual([
-          "mcp-server-sqlite",
-          "--db-path",
-          "./data.db"
-        ])
-        expect(skill?.mcpConfig?.memory).toBeDefined()
-        expect(skill?.mcpConfig?.memory?.command).toBe("npx")
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.mcpConfig).toBeDefined()
+      expect(skill?.mcpConfig?.sqlite).toBeDefined()
+      expect(skill?.mcpConfig?.sqlite?.command).toBe("uvx")
+      expect(skill?.mcpConfig?.sqlite?.args).toEqual([
+        "mcp-server-sqlite",
+        "--db-path",
+        "./data.db"
+      ])
+      expect(skill?.mcpConfig?.memory).toBeDefined()
+      expect(skill?.mcpConfig?.memory?.command).toBe("npx")
     })
 
     it("returns undefined mcpConfig for skill without MCP", async () => {
@@ -85,19 +78,12 @@ This is a simple skill.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "simple-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "simple-skill")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.mcpConfig).toBeUndefined()
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.mcpConfig).toBeUndefined()
     })
 
     it("preserves env var placeholders without expansion", async () => {
@@ -118,19 +104,12 @@ Skill with env vars.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "env-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "env-skill")
-
-        // #then
-        expect(skill?.mcpConfig?.["api-server"]?.env?.API_KEY).toBe("${API_KEY}")
-        expect(skill?.mcpConfig?.["api-server"]?.env?.DB_PATH).toBe("${HOME}/data.db")
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill?.mcpConfig?.["api-server"]?.env?.API_KEY).toBe("${API_KEY}")
+      expect(skill?.mcpConfig?.["api-server"]?.env?.DB_PATH).toBe("${HOME}/data.db")
     })
 
     it("handles malformed YAML gracefully", async () => {
@@ -145,19 +124,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      // #then - when YAML fails, skill uses directory name as fallback
+      const skill = skills.find(s => s.name === "bad-yaml-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        // #then - when YAML fails, skill uses directory name as fallback
-        const skill = skills.find(s => s.name === "bad-yaml-skill")
-
-        expect(skill).toBeDefined()
-        expect(skill?.mcpConfig).toBeUndefined()
-      } finally {
-        process.chdir(originalCwd)
-      }
+      expect(skill).toBeDefined()
+      expect(skill?.mcpConfig).toBeUndefined()
     })
   })
 
@@ -182,22 +154,15 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "ampcode-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "ampcode-skill")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.mcpConfig).toBeDefined()
-        expect(skill?.mcpConfig?.playwright).toBeDefined()
-        expect(skill?.mcpConfig?.playwright?.command).toBe("npx")
-        expect(skill?.mcpConfig?.playwright?.args).toEqual(["@playwright/mcp@latest"])
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.mcpConfig).toBeDefined()
+      expect(skill?.mcpConfig?.playwright).toBeDefined()
+      expect(skill?.mcpConfig?.playwright?.command).toBe("npx")
+      expect(skill?.mcpConfig?.playwright?.args).toEqual(["@playwright/mcp@latest"])
     })
 
     it("mcp.json takes priority over YAML frontmatter", async () => {
@@ -223,19 +188,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "priority-skill")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "priority-skill")
-
-        // #then - mcp.json should take priority
-        expect(skill?.mcpConfig?.["from-json"]).toBeDefined()
-        expect(skill?.mcpConfig?.["from-yaml"]).toBeUndefined()
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then - mcp.json should take priority
+      expect(skill?.mcpConfig?.["from-json"]).toBeDefined()
+      expect(skill?.mcpConfig?.["from-yaml"]).toBeUndefined()
     })
 
     it("supports direct format without mcpServers wrapper", async () => {
@@ -255,19 +213,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "direct-format")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "direct-format")
-
-        // #then
-        expect(skill?.mcpConfig?.sqlite).toBeDefined()
-        expect(skill?.mcpConfig?.sqlite?.command).toBe("uvx")
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill?.mcpConfig?.sqlite).toBeDefined()
+      expect(skill?.mcpConfig?.sqlite?.command).toBe("uvx")
       })
   })
 
@@ -285,19 +236,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "space-separated-tools")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "space-separated-tools")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
     })
 
     it("parses YAML inline array allowed-tools", async () => {
@@ -313,19 +257,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "yaml-inline-array")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "yaml-inline-array")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
     })
 
     it("parses YAML multi-line array allowed-tools", async () => {
@@ -345,19 +282,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "yaml-multiline-array")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "yaml-multiline-array")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.allowedTools).toEqual(["Read", "Write", "Edit", "Bash"])
     })
 
     it("returns undefined for skill without allowed-tools", async () => {
@@ -372,19 +302,12 @@ Skill body.
 
       // #when
       const { discoverSkills } = await import("./loader")
-      const originalCwd = process.cwd()
-      process.chdir(TEST_DIR)
+      const skills = await discoverSkills({ includeClaudeCodePaths: false, cwd: TEST_DIR })
+      const skill = skills.find(s => s.name === "no-allowed-tools")
 
-      try {
-        const skills = await discoverSkills({ includeClaudeCodePaths: false })
-        const skill = skills.find(s => s.name === "no-allowed-tools")
-
-        // #then
-        expect(skill).toBeDefined()
-        expect(skill?.allowedTools).toBeUndefined()
-      } finally {
-        process.chdir(originalCwd)
-      }
+      // #then
+      expect(skill).toBeDefined()
+      expect(skill?.allowedTools).toBeUndefined()
     })
   })
 })
