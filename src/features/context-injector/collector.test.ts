@@ -176,25 +176,19 @@ describe("ContextCollector", () => {
       expect(order).toEqual(["critical", "high", "normal", "low"])
     })
 
-    it("maintains registration order within same priority", () => {
+    it("orders deterministically within same priority (source + id)", () => {
       // #given
       const sessionID = "ses_order"
       collector.register(sessionID, {
-        id: "first",
+        id: "b",
         source: "custom",
-        content: "First",
+        content: "B",
         priority: "normal",
       })
       collector.register(sessionID, {
-        id: "second",
+        id: "a",
         source: "custom",
-        content: "Second",
-        priority: "normal",
-      })
-      collector.register(sessionID, {
-        id: "third",
-        source: "custom",
-        content: "Third",
+        content: "A",
         priority: "normal",
       })
 
@@ -203,7 +197,7 @@ describe("ContextCollector", () => {
 
       // #then
       const ids = pending.entries.map((e) => e.id)
-      expect(ids).toEqual(["first", "second", "third"])
+      expect(ids).toEqual(["a", "b"])
     })
   })
 
