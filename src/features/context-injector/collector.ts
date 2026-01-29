@@ -77,7 +77,9 @@ export class ContextCollector {
     return entries.sort((a, b) => {
       const priorityDiff = PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]
       if (priorityDiff !== 0) return priorityDiff
-      return a.timestamp - b.timestamp
+      const sourceDiff = a.source.localeCompare(b.source)
+      if (sourceDiff !== 0) return sourceDiff
+      return a.id.localeCompare(b.id)
     })
   }
 }
