@@ -29,7 +29,8 @@
     "postinstall": "node postinstall.mjs",
     "prepublishOnly": "bun run clean && bun run build",
     "typecheck": "tsc --noEmit",
-    "test": "bun test"
+    "test": "bun test",
+    "zh:diff": "bun run script/zh-diff.ts"
   },
   "keywords": [
     "opencode",
