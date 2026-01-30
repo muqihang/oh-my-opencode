@@ -1,7 +1,7 @@
 import type { ContextCollector } from "./collector"
 import type { Message, Part } from "@opencode-ai/sdk"
 import { log } from "../../shared"
-import { getMainSessionID } from "../claude-code-session-state"
+import { pointerize } from "./pointerize"
 
 interface OutputPart {
   type: string
@@ -13,6 +13,8 @@ interface InjectionResult {
   injected: boolean
   contextLength: number
 }
+
+const DEFAULT_CONTEXT_BUDGET_CHARS = 4000
 
 export function injectPendingContext(
   collector: ContextCollector,
@@ -106,12 +108,11 @@ export function createContextInjectorMessagesTransformHook(
       }
 
       const lastUserMessage = messages[lastUserMessageIndex]
-      // Try message.info.sessionID first, fallback to mainSessionID
+      // Only trust message.info.sessionID; do not fallback to main session.
       const messageSessionID = (lastUserMessage.info as unknown as { sessionID?: string }).sessionID
-      const sessionID = messageSessionID ?? getMainSessionID()
+      const sessionID = typeof messageSessionID === "string" ? messageSessionID.trim() : ""
       log("[DEBUG] Extracted sessionID", {
         messageSessionID,
-        mainSessionID: getMainSessionID(),
         sessionID,
         infoKeys: Object.keys(lastUserMessage.info),
       })
@@ -134,6 +135,15 @@ export function createContextInjectorMessagesTransformHook(
         return
       }
 
+      const messagePath = (lastUserMessage.info as unknown as { path?: { cwd?: string; root?: string } }).path
+      const baseDir = messagePath?.root ?? messagePath?.cwd ?? process.cwd()
+      const pointerized = pointerize({
+        sessionID,
+        text: pending.merged,
+        maxChars: DEFAULT_CONTEXT_BUDGET_CHARS,
+        baseDir,
+      })
+
       const textPartIndex = lastUserMessage.parts.findIndex(
         (p) => p.type === "text" && (p as { text?: string }).text
       )
@@ -152,7 +162,7 @@ export function createContextInjectorMessagesTransformHook(
         messageID: lastUserMessage.info.id,
         sessionID: (lastUserMessage.info as { sessionID?: string }).sessionID ?? "",
         type: "text" as const,
-        text: pending.merged,
+        text: pointerized.text,
         synthetic: true,  // UI에서 숨겨짐
       }
 
@@ -160,7 +170,7 @@ export function createContextInjectorMessagesTransformHook(
 
       log("[context-injector] Inserted synthetic part with hook content", {
         sessionID,
-        contentLength: pending.merged.length,
+        contentLength: pointerized.text.length,
       })
     },
   }

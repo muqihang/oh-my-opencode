@@ -1,14 +1,19 @@
 import { describe, it, expect, beforeEach } from "bun:test"
+import { mkdtempSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { ContextCollector } from "./collector"
 import {
   createContextInjectorMessagesTransformHook,
 } from "./injector"
+import { _resetForTesting, setMainSession } from "../claude-code-session-state"
 
 describe("createContextInjectorMessagesTransformHook", () => {
   let collector: ContextCollector
 
   beforeEach(() => {
     collector = new ContextCollector()
+    _resetForTesting()
   })
 
   const createMockMessage = (
@@ -24,6 +29,55 @@ describe("createContextInjectorMessagesTransformHook", () => {
       agent: "sisyphus",
       model: { providerID: "test", modelID: "test" },
       path: { cwd: "/", root: "/" },
+    },
+    parts: [
+      {
+        id: `part_${Date.now()}`,
+        sessionID,
+        messageID: `msg_${Date.now()}`,
+        type: "text" as const,
+        text,
+      },
+    ],
+  })
+
+  const createMockMessageWithoutSessionID = (
+    role: "user" | "assistant",
+    text: string
+  ) => ({
+    info: {
+      id: `msg_${Date.now()}_${Math.random()}`,
+      role,
+      time: { created: Date.now() },
+      agent: "sisyphus",
+      model: { providerID: "test", modelID: "test" },
+      path: { cwd: "/", root: "/" },
+    },
+    parts: [
+      {
+        id: `part_${Date.now()}`,
+        sessionID: "",
+        messageID: `msg_${Date.now()}`,
+        type: "text" as const,
+        text,
+      },
+    ],
+  })
+
+  const createMockMessageWithPath = (
+    role: "user" | "assistant",
+    text: string,
+    sessionID: string,
+    directory: string
+  ) => ({
+    info: {
+      id: `msg_${Date.now()}_${Math.random()}`,
+      sessionID,
+      role,
+      time: { created: Date.now() },
+      agent: "sisyphus",
+      model: { providerID: "test", modelID: "test" },
+      path: { cwd: directory, root: directory },
     },
     parts: [
       {
@@ -118,5 +172,48 @@ describe("createContextInjectorMessagesTransformHook", () => {
 
     // #then
     expect(collector.hasPending(sessionID)).toBe(false)
+  })
+
+  it("does not fallback to main session when message sessionID is missing", async () => {
+    const hook = createContextInjectorMessagesTransformHook(collector)
+    const mainSessionID = "ses_main"
+    setMainSession(mainSessionID)
+    collector.register(mainSessionID, {
+      id: "ctx",
+      source: "custom",
+      content: "MAIN_ONLY",
+    })
+
+    const messages = [createMockMessageWithoutSessionID("user", "Hello")]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = { messages } as any
+
+    await hook["experimental.chat.messages.transform"]!({}, output)
+
+    expect(output.messages[0].parts[0].text).toBe("Hello")
+    expect(collector.hasPending(mainSessionID)).toBe(true)
+  })
+
+  it("spills large pending context to a file pointer instead of pasting", async () => {
+    const hook = createContextInjectorMessagesTransformHook(collector)
+    const sessionID = "ses_big"
+    const tempDir = mkdtempSync(join(tmpdir(), "omo-pointer-"))
+
+    collector.register(sessionID, {
+      id: "big",
+      source: "custom",
+      content: "X".repeat(50_000),
+    })
+
+    const messages = [createMockMessageWithPath("user", "Hello", sessionID, tempDir)]
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const output = { messages } as any
+
+    await hook["experimental.chat.messages.transform"]!({}, output)
+
+    const injected = output.messages[0].parts[0].text as string
+    expect(injected).toContain("<context_pointer>")
+    expect(injected).toContain("sha256:")
+    expect(injected.length).toBeLessThan(4000)
   })
 })

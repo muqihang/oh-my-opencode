@@ -9,6 +9,9 @@ const TEST_DEFAULT_MODEL = "anthropic/claude-opus-4-5"
 describe("createBuiltinAgents with model overrides", () => {
   test("Sisyphus with default model has thinking config", async () => {
     // #given - no overrides, using systemDefaultModel
+    // Ensure deterministic behavior: this test is specifically about systemDefaultModel,
+    // so we intentionally disable connected-providers-based fallback.
+    const cacheSpy = spyOn(connectedProvidersCache, "readConnectedProvidersCache").mockReturnValue(null)
 
     // #when
     const agents = await createBuiltinAgents([], {}, undefined, TEST_DEFAULT_MODEL)
@@ -17,6 +20,7 @@ describe("createBuiltinAgents with model overrides", () => {
     expect(agents.sisyphus.model).toBe("anthropic/claude-opus-4-5")
     expect(agents.sisyphus.thinking).toEqual({ type: "enabled", budgetTokens: 32000 })
     expect(agents.sisyphus.reasoningEffort).toBeUndefined()
+    cacheSpy.mockRestore()
   })
 
   test("Sisyphus with GPT model override has reasoningEffort, no thinking", async () => {
@@ -37,6 +41,7 @@ describe("createBuiltinAgents with model overrides", () => {
   test("Sisyphus uses system default when no availableModels provided", async () => {
     // #given
     const systemDefaultModel = "anthropic/claude-opus-4-5"
+    const cacheSpy = spyOn(connectedProvidersCache, "readConnectedProvidersCache").mockReturnValue(null)
 
     // #when
     const agents = await createBuiltinAgents([], {}, undefined, systemDefaultModel)
@@ -45,6 +50,7 @@ describe("createBuiltinAgents with model overrides", () => {
     expect(agents.sisyphus.model).toBe("anthropic/claude-opus-4-5")
     expect(agents.sisyphus.thinking).toEqual({ type: "enabled", budgetTokens: 32000 })
     expect(agents.sisyphus.reasoningEffort).toBeUndefined()
+    cacheSpy.mockRestore()
   })
 
   test("Oracle uses connected provider fallback when availableModels is empty and cache exists", async () => {
