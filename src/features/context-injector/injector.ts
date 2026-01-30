@@ -135,7 +135,7 @@ export function createContextInjectorMessagesTransformHook(
         return
       }
 
-      const messagePath = lastUserMessage.info.path as { cwd?: string; root?: string } | undefined
+      const messagePath = (lastUserMessage.info as unknown as { path?: { cwd?: string; root?: string } }).path
       const baseDir = messagePath?.root ?? messagePath?.cwd ?? process.cwd()
       const pointerized = pointerize({
         sessionID,
