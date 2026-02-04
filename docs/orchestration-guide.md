@@ -22,6 +22,34 @@ Is it a quick fix or simple task?
 
 ---
 
+## OpenCode Base Orchestrator Compatibility (Fork Strategy)
+
+OpenCode base now supports a **single-session orchestrator** mode that can automatically dispatch tasks when enabled. Oh-My-OpenCode also provides orchestration/dispatching. If both are configured to dispatch, you may see **double-delegation** or “steering wheel” conflicts.
+
+If you want **Oh-My-OpenCode to own dispatching** (recommended when using multi-session orchestration), set:
+
+```bash
+export OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1
+export OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest
+```
+
+Why `suggest`?
+- `auto`: OpenCode base may auto-call `tool:task` in fork orchestrator mode, which can compete with Oh-My-OpenCode’s dispatching.
+- `suggest`: OpenCode base only prints *suggested dispatch* output, leaving the actual dispatching to Oh-My-OpenCode.
+- `off`: disables base dispatching entirely (useful if you want to be explicit).
+
+### Optional: enable a one-time warning
+
+Oh-My-OpenCode provides an opt-in compatibility warning to help catch misconfigured env combinations. Add to your config:
+
+```jsonc
+{
+  "experimental": {
+    "opencode_orchestrator_compat": { "enabled": true }
+  }
+}
+```
+
 This document provides a comprehensive guide to the orchestration system that implements Oh-My-OpenCode's core philosophy: **"Separation of Planning and Execution"**.
 
 ## 1. Overview
