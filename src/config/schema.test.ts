@@ -606,3 +606,54 @@ describe("OhMyOpenCodeConfigSchema - browser_automation_engine", () => {
     expect(result.data?.browser_automation_engine).toBeUndefined()
   })
 })
+
+describe("OhMyOpenCodeConfigSchema - experimental.opencode_orchestrator_compat", () => {
+  test("accepts experimental orchestrator compat config", () => {
+    // #given
+    const input = {
+      experimental: {
+        opencode_orchestrator_compat: {
+          enabled: true,
+        },
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental).toEqual({
+        opencode_orchestrator_compat: {
+          enabled: true,
+        },
+      })
+    }
+  })
+
+  test("strips unknown keys inside experimental orchestrator compat config (strict behavior)", () => {
+    // #given
+    const input = {
+      experimental: {
+        opencode_orchestrator_compat: {
+          enabled: true,
+          unknown_key: "ignored",
+        },
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental).toEqual({
+        opencode_orchestrator_compat: {
+          enabled: true,
+        },
+      })
+    }
+  })
+})

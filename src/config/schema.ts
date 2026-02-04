@@ -244,6 +244,10 @@ export const ExperimentalConfigSchema = z.object({
   truncate_all_tool_outputs: z.boolean().optional(),
   /** Dynamic context pruning configuration */
   dynamic_context_pruning: DynamicContextPruningConfigSchema.optional(),
+  /** Compatibility warnings for OpenCode base single-session orchestrator */
+  opencode_orchestrator_compat: z.object({
+    enabled: z.boolean().default(false),
+  }).optional(),
 })
 
 export const SkillSourceSchema = z.union([
