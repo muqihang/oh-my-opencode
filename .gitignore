@@ -2,6 +2,9 @@
 .sisyphus/
 node_modules/
 
+# Git worktrees (local development)
+.worktrees/
+
 # Build output
 dist/
 
