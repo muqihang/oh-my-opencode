@@ -78,10 +78,12 @@ import { SkillMcpManager } from "./features/skill-mcp-manager";
 import { initTaskToastManager } from "./features/task-toast-manager";
 import { TmuxSessionManager } from "./features/tmux-subagent";
 import { type HookName } from "./config";
-import { log, detectExternalNotificationPlugin, getNotificationConflictWarning, resetMessageCursor, includesCaseInsensitive, hasConnectedProvidersCache, getOpenCodeVersion, isOpenCodeVersionAtLeast, OPENCODE_NATIVE_AGENTS_INJECTION_VERSION } from "./shared";
+import { log, detectExternalNotificationPlugin, getNotificationConflictWarning, resetMessageCursor, includesCaseInsensitive, hasConnectedProvidersCache, getOpenCodeVersion, isOpenCodeVersionAtLeast, OPENCODE_NATIVE_AGENTS_INJECTION_VERSION, getOrchestratorForkStrategyCompatWarning } from "./shared";
 import { loadPluginConfig } from "./plugin-config";
 import { createModelCacheState, getModelLimit } from "./plugin-state";
 import { createConfigHandler } from "./plugin-handlers";
+
+let hasWarnedOrchestratorCompat = false
 
 const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   log("[OhMyOpenCodePlugin] ENTRY - plugin loading", { directory: ctx.directory })
@@ -89,6 +91,18 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   startTmuxCheck();
 
   const pluginConfig = loadPluginConfig(ctx.directory, ctx);
+
+  if (
+    !hasWarnedOrchestratorCompat &&
+    pluginConfig.experimental?.opencode_orchestrator_compat?.enabled === true
+  ) {
+    const warning = getOrchestratorForkStrategyCompatWarning(process.env)
+    if (warning.shouldWarn) {
+      hasWarnedOrchestratorCompat = true
+      console.warn(warning.message)
+    }
+  }
+
   const disabledHooks = new Set(pluginConfig.disabled_hooks ?? []);
   const firstMessageVariantGate = createFirstMessageVariantGate();
 
