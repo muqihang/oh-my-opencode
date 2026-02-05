@@ -140,6 +140,57 @@ describe("atlas hook", () => {
       expect(prompt).toContain(".sisyphus/notepads/demo/opencode-base-evidence.md")
     })
 
+    test("prefers json base evidence snapshot when present (md missing)", async () => {
+      //#given
+      const sessionID = "session-atlas-pretool-2-json"
+      setupMessageStorage(sessionID, "atlas")
+
+      const planPath = join(TEST_DIR, ".sisyphus", "plans", "demo.md")
+      mkdirSync(join(TEST_DIR, ".sisyphus", "plans"), { recursive: true })
+      writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+      const state: BoulderState = {
+        active_plan: planPath,
+        started_at: "2026-02-05T00:00:00Z",
+        session_ids: [sessionID],
+        plan_name: "demo",
+      }
+      writeBoulderState(TEST_DIR, state)
+
+      const indexDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      mkdirSync(indexDir, { recursive: true })
+      writeFileSync(join(indexDir, "opencode-base-evidence.json"), JSON.stringify({ ok: true }, null, 2))
+
+      const hook = createAtlasHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            inject_to_delegate_task: true,
+            verbose: false,
+            write_json: true,
+          },
+        },
+        directory: TEST_DIR,
+      })
+
+      const output = {
+        args: {
+          prompt: "Do exactly one thing.",
+        },
+      }
+
+      //#when
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+
+      //#then
+      const prompt = output.args.prompt as string
+      expect(prompt).toContain(".sisyphus/notepads/demo/opencode-base-evidence.json")
+      expect(prompt).not.toContain(".sisyphus/notepads/demo/opencode-base-evidence.md")
+    })
+
     test("does not duplicate base evidence instruction across repeated calls", async () => {
       //#given
       const sessionID = "session-atlas-pretool-3"

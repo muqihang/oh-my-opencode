@@ -431,15 +431,38 @@ function stripSystemReminderBlocks(input: string, markers: string[]): string {
   return input.replace(new RegExp(pattern, "g"), "")
 }
 
-function buildBaseEvidenceDirective(planName: string): string {
-  const index = `.sisyphus/notepads/${planName}/opencode-base-evidence.md`
+type BaseEvidenceIndexChoice = {
+  absPath: string
+  relPath: string
+}
+
+function resolveBaseEvidenceIndex(baseDir: string, planName: string): BaseEvidenceIndexChoice | undefined {
+  const candidates = [
+    {
+      relPath: `.sisyphus/notepads/${planName}/opencode-base-evidence.json`,
+      absPath: join(baseDir, ".sisyphus", "notepads", planName, "opencode-base-evidence.json"),
+    },
+    {
+      relPath: `.sisyphus/notepads/${planName}/opencode-base-evidence.md`,
+      absPath: join(baseDir, ".sisyphus", "notepads", planName, "opencode-base-evidence.md"),
+    },
+  ]
+
+  for (const candidate of candidates) {
+    if (existsSync(candidate.absPath)) return candidate
+  }
+
+  return undefined
+}
+
+function buildBaseEvidenceDirective(indexRelPath: string): string {
   return `
 ${createSystemDirective(SystemDirectiveTypes.OPENCODE_BASE_EVIDENCE)}
 
 **Working Set (OpenCode base evidence)**
 
 Before running any new retrieval/grep/scan:
-1) Read: \`${index}\`
+1) Read: \`${indexRelPath}\`
 2) Reuse pointers/paths from that index first
 3) Only if missing, do new retrieval
 `
@@ -693,15 +716,13 @@ export function createAtlasHook(
 
         const boulderState = readBoulderState(options?.directory ?? ctx.directory)
         const planName = boulderState?.plan_name
-        const indexAbs = planName
-          ? join(options?.directory ?? ctx.directory, ".sisyphus", "notepads", planName, "opencode-base-evidence.md")
-          : undefined
+        const baseDir = options?.directory ?? ctx.directory
+        const baseEvidenceIndex = planName ? resolveBaseEvidenceIndex(baseDir, planName) : undefined
         const shouldInjectBaseEvidence =
           bridgeEnabled &&
           injectEnabled &&
           planName !== undefined &&
-          indexAbs !== undefined &&
-          existsSync(indexAbs)
+          baseEvidenceIndex !== undefined
 
         const markers = [
           singleTaskMarker,
@@ -713,8 +734,8 @@ export function createAtlasHook(
         const prelude = [
           `<system-reminder>${SINGLE_TASK_DIRECTIVE}</system-reminder>\n`,
           `<system-reminder>${NOTEPAD_DIRECTIVE}</system-reminder>\n`,
-          ...(shouldInjectBaseEvidence && planName
-            ? [`<system-reminder>${buildBaseEvidenceDirective(planName)}</system-reminder>\n`]
+          ...(shouldInjectBaseEvidence && baseEvidenceIndex
+            ? [`<system-reminder>${buildBaseEvidenceDirective(baseEvidenceIndex.relPath)}</system-reminder>\n`]
             : []),
         ].join("")
 
@@ -722,6 +743,7 @@ export function createAtlasHook(
         log(`[${HOOK_NAME}] delegate_task prompt prelude composed`, {
           sessionID: input.sessionID,
           baseEvidenceInjected: shouldInjectBaseEvidence,
+          baseEvidenceIndex: baseEvidenceIndex?.relPath,
         })
       }
     },
