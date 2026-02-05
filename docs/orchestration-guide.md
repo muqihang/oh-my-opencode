@@ -207,6 +207,39 @@ You can control related features in `oh-my-opencode.json`.
 }
 ```
 
+### Experimental: OpenCode Base Evidence Bridge (v0)
+
+**What this is:** When you run `/start-work` (and a plan is actually selected/resumed), Oh-My-OpenCode can optionally read the OpenCode base evidence manifest:
+
+- `.opencode/evidence/<sessionId>/manifest.json`
+
+Then it picks an **allowlist** of "key artifacts" (`kind/path/sha256`), renders a Markdown index, and appends it into the plan notepad:
+
+- `.sisyphus/notepads/<plan-name>/opencode-base-evidence.md`
+
+**Why it exists:** Atlas and delegated sub-sessions can quickly find the most important base artifacts (plans, retrieval hits, etc.) without needing to re-run discovery.
+
+**Safety / workflow guarantees:**
+- Default behavior is unchanged (feature is config-gated and **disabled by default**).
+- Read-only for `.opencode/` (never modifies base evidence).
+- Writes only into `.sisyphus/notepads/` (does not change plan file contents or format).
+- Append-only: if `opencode-base-evidence.md` already exists, a new timestamped section is appended (never overwrites).
+- Best-effort: any failure is logged and will **not** block `/start-work`.
+
+**How to enable:**
+
+```jsonc
+{
+  "experimental": {
+    "opencode_base_artifacts_bridge": { "enabled": true }
+  }
+}
+```
+
+**Allowlist (v0):**
+- `orchestrator-plan`
+- `retrieval-hits`
+
 ## 7. Best Practices
 
 1. **Don't Rush**: Invest sufficient time in the interview with Prometheus. The more perfect the plan, the faster the execution.
