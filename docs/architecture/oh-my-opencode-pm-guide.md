@@ -118,14 +118,19 @@ Oh-My 常用的工作方式是：
 - **真正动手时再派子会话**（隔离、安全、可审计）
 - 并且当用户安装 Oh-My 时：**Oh-My 负责“派工与多会话协作”**，基座 orchestrator 负责“单会话内的快拆与提示”
 
-这对应到基座里一个关键开关：`OPENCODE_ORCHESTRATOR_FORK_STRATEGY`。
+这对应到基座里一个关键决策：**fork 派工到底是谁来做**。
+
+最佳实践是用 OpenCode 的“产品模式/配置”来表达，而不是让用户背环境变量：
+- `product.mode`（例如 base / programming / legal）
+- `product.forkStrategy`（auto / suggest / off）
 
 ### 5.2 最推荐的共存设置（当前阶段）
-当你希望 **Oh-My 接管派工（主会话 → 子会话）** 时，推荐：
+当你希望 **Oh-My 接管派工（主会话 → 子会话）** 时，推荐（config-first）：
 
-```bash
-export OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1
-export OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest
+```jsonc
+{
+  "product": { "mode": "programming" }
+}
 ```
 
 它意味着：
@@ -134,7 +139,12 @@ export OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest
 - 真正派工由 Oh-My 来做（更符合多会话编排插件的定位）
 
 补充说明（实践建议）：
-- 这些环境变量最好在 **启动 OpenCode 之前** 就设置好（最稳妥），避免运行中变更不生效的情况。
+- 如果你暂时无法改配置文件，也可以用环境变量兜底（仍然建议在启动 OpenCode 之前设置）：
+
+  ```bash
+  export OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1
+  export OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest
+  ```
 
 ### 5.3 Oh-My 的提示开关（防止用户配错）
 Oh-My 目前提供一个**可选的**兼容提示开关（默认关闭，不会打扰老用户）：
@@ -147,7 +157,9 @@ Oh-My 目前提供一个**可选的**兼容提示开关（默认关闭，不会�
 }
 ```
 
-开启后：当系统检测到“基座 orchestrator 开启 + forkStrategy 仍是 auto/缺省”时，会在启动时给一次 warning，提醒你改成 `suggest`。
+开启后：当系统检测到“基座 orchestrator 开启 + 基座 forkStrategy 解析结果仍是 auto”时，会在启动时给一次 warning，提醒你改成 `suggest`。
+
+为了减少误报，它会**优先参考基座的 `product` 配置**（能读到的话），读不到时再退回 env 判断。
 
 ---
 

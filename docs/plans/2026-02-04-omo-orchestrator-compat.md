@@ -6,7 +6,7 @@
 
 **Architecture:**
 - Add a small experimental config flag to gate behavior.
-- Implement a pure env-checking function returning `{ shouldWarn, message }`.
+- Implement a pure compat checker that is **config-first** (uses OpenCode `product` config when available) with an **env fallback**, returning `{ shouldWarn, message }`.
 - Call it once on plugin startup and print a visible warning if needed.
 
 **Tech Stack:** Bun, TypeScript, Zod, `bun:test`
@@ -22,6 +22,8 @@
 - Cover:
   - orchestrator on + forkStrategy `auto`/`undefined` => `shouldWarn=true`
   - orchestrator on + forkStrategy `suggest`/`off` => `shouldWarn=false`
+  - orchestrator on + `product.mode=programming|legal` (no explicit `product.forkStrategy`) => `shouldWarn=false` (base defaults to `suggest`)
+  - orchestrator on + explicit `product.forkStrategy=auto` => `shouldWarn=true` (explicit override)
   - orchestrator off => `shouldWarn=false`
 
 **Step 2: Run test to verify it fails**
@@ -35,8 +37,12 @@ Expected: FAIL (module/function not found)
 - Modify: `src/shared/index.ts`
 
 **Step 1: Implement minimal function**
-- Export `getOrchestratorForkStrategyCompatWarning(env)`
+- Export `getOrchestratorForkStrategyCompatWarning(env, baseConfig?)`
 - Return stable warning message recommending `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
+- Resolve base fork strategy with the same semantics as OpenCode base:
+  - `product.forkStrategy` overrides
+  - otherwise `product.mode != base` defaults to `suggest`
+  - otherwise env (default `auto`)
 
 **Step 2: Run test to verify it passes**
 Run: `bun test src/shared/orchestrator-compat.test.ts`
@@ -75,6 +81,7 @@ Expected: PASS
 **Step 1: Call compat check once during plugin load**
 - Only when config flag enabled.
 - Warn only when checker says `shouldWarn`.
+- Fetch OpenCode base config best-effort via `ctx.client.config.get()` and pass only the minimal `data` snapshot into the checker (fall back to env-only when fetch fails).
 
 **Step 2: Run targeted tests**
 Run: `bun test src/index.test.ts`
@@ -85,9 +92,13 @@ Expected: PASS
 **Files:**
 - Modify: `docs/orchestration-guide.md` (or `README.md`)
 
-**Step 1: Document recommended env combination**
-- `OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1`
-- `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
+**Step 1: Document recommended config-first setup**
+- Prefer OpenCode config:
+  - `product.mode=programming` (recommended)
+  - or `product.forkStrategy=suggest` (explicit)
+- Provide env-based fallback:
+  - `OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1`
+  - `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
 - Explain why: base prints suggestions, Oh-My handles actual dispatch.
 
 ### Task 7: Full verification
@@ -99,4 +110,3 @@ Expected: PASS
 **Step 2: Run typecheck**
 Run: `bun run typecheck`
 Expected: PASS
-

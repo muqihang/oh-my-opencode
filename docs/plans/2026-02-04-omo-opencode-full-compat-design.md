@@ -18,6 +18,13 @@ OpenCode 基座新增了 **single-session orchestrator**（实验功能），可
   - `suggest`：基座只给出“建议派工”，不自动创建子会话（更适合与插件共存）
   - `off`：基座不做 fork 派工（最保守，但会损失自动化）
 
+同时，基座新增了一个更“产品化/商用”的配置入口（优先推荐）：
+- `product.mode=base|programming|legal`
+  - 当 `mode != base` 时，基座默认会把 fork 派工策略视为 `suggest`（除非你显式覆盖）
+- `product.forkStrategy=auto|suggest|off`（显式覆盖）
+
+> 这套 `product.*` 是为“多插件/多领域切换”准备的：比 env 更不容易漏配，也避免进程级全局副作用。
+
 ### 1.2 Oh-My-OpenCode 插件（Plugin）
 Oh-My-OpenCode 已经是一个**多会话编排插件**，核心能力是：
 - Prometheus 产出 plan（`.sisyphus/plans/*.md`）
@@ -27,7 +34,9 @@ Oh-My-OpenCode 已经是一个**多会话编排插件**，核心能力是：
 ### 1.3 已落地的最小兼容（当前仓库已有）
 为了避免“方向盘冲突”，我们已经落地了一层 **最小风险兼容提示**：
 - 配置开关（默认关闭）：`experimental.opencode_orchestrator_compat.enabled`
-- 当检测到 `OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1` 且 forkStrategy 缺省/auto 时，启动时 warn 一次，建议设为 `suggest`
+- 当检测到 `OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1` 且基座 forkStrategy 解析结果为 `auto` 时，启动时 warn 一次，建议设为 `suggest`
+  - **优先使用基座 `product` 配置（若可读取）以避免误报**（例如 `product.mode=programming` 时基座已默认安全）
+  - 读取失败时再退回 env 判定
 - 不修改 env（避免 surprise）
 
 相关文档与实现：
@@ -47,7 +56,7 @@ Oh-My-OpenCode 已经是一个**多会话编排插件**，核心能力是：
 3) 只要“oh-my + opencode 一起用”，就要**完全兼容**，且可长期演进  
 
 仅有 warn 的问题：
-- 兼容性依赖用户手工设置 env；易遗漏
+- 兼容性依赖用户手工设置 env/配置；易遗漏（尤其是 env）
 - 基座 orchestrator 的“计划/证据”产物（artifacts/events）目前没有被插件消费，协作空间没用起来
 - 未来多插件（编程/法律）切换时，需要更清晰的“谁负责派工”的职责边界与稳定契约
 
@@ -113,18 +122,21 @@ Oh-My-OpenCode 已经是一个**多会话编排插件**，核心能力是：
 
 **建议约定**：
 1) 当用户启用 Oh-My 的多会话编排（或安装/选择该插件为主编排者）时：
-   - 推荐 `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
+   - **推荐 config-first**：在 OpenCode 配置中设定：
+     - `product.mode=programming`（推荐）
+     - 或 `product.forkStrategy=suggest`（显式）
+   - env 仅作为兜底（启动前设置）：`OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
 2) 当用户不使用 Oh-My（或只做轻量增强）时：
    - 可以保持基座 `auto`（由基座全自动派工）
 
-**插件侧新增（建议，默认 off）**：
-- 扩展配置：`experimental.opencode_orchestrator_compat`
-  - `enabled: boolean`（已有）
-  - `mode?: "warn" | "enforce_suggest"`（新增）
-    - `warn`：仅提示（默认）
-    - `enforce_suggest`：仅在 forkStrategy 缺省时，插件在启动时设置 `process.env.OPENCODE_ORCHESTRATOR_FORK_STRATEGY="suggest"`（**显式 opt-in**）
+**插件侧兼容机制（建议，默认 off）**：
+- 配置：`experimental.opencode_orchestrator_compat.enabled`（已有，默认 `false`）
+- 判定逻辑：
+  - **优先读取 OpenCode base 配置**（`product.mode` / `product.forkStrategy`）以避免误报
+  - 读取失败再退回 env 判定
+- 约束：不在运行时修改 `process.env`（进程级副作用 + 基座可能在模块加载时缓存 env，导致不生效）
 
-> 注：这一步是“把兼容从文档提示升级成可选自动化”。默认仍然不改 env，符合低风险原则。
+> 注：这一步的定位是“把兼容从文档建议升级成可选的自动检测 + 明确提示”，而不是“偷偷改系统行为”。
 
 ### 5.2 事件/产物级协作（不靠解析纯文本）
 **为什么**：解析模型输出的自然语言文本不稳定、不可测试、易碎。
@@ -167,8 +179,9 @@ Oh-My 已有 pointerize 机制（`.opencode/context-capsules/*`）。
 
 ## 6. 风险与开放问题（实施前必须定案）
 
-1) **插件是否允许在 opt-in 模式下修改 env？**
-   - 建议：允许，但必须 `mode="enforce_suggest"` 显式打开，且只在缺省时写入（不覆盖用户显式设置）。
+1) **插件是否需要提供“一键修复/自动写入 OpenCode 配置”？**
+   - 建议：不自动写入。先提供 `doctor`/提示（copy-paste 配置片段）满足商用“可控 + 可审计”。
+   - 原因：自动改用户配置属于持久化副作用，容易引发误解；且不同团队对默认策略的偏好可能不同。
 
 2) **“自动桥接”是否默认关闭？**
    - 建议：默认关闭。先做提示式桥接 + 手动命令触发生成 `.sisyphus` plan，稳定后再自动化。
@@ -176,17 +189,9 @@ Oh-My 已有 pointerize 机制（`.opencode/context-capsules/*`）。
 3) **基座对外事件是否稳定可依赖？**
    - 建议：先以“存在则消费、缺失则跳过”的方式实现；并用合约测试锁定最小字段（path/sha256/mode）。
 
-4) **关键技术依赖：基座 forkStrategy 是否“动态读取”？**
-   - 现状：OpenCode 基座当前实现中，`Flag.OPENCODE_ORCHESTRATOR_FORK_STRATEGY` 是在模块加载时读取 `process.env` 并缓存为常量（非 getter）。这意味着：**插件在运行时修改 `process.env` 可能不会生效**（取决于 Flag 模块加载时序）。
-   - 建议：若要实现 `mode="enforce_suggest"` 这种“插件侧可选自动化”，需要基座把该 Flag 改成**动态 getter**（与 `OPENCODE_CONFIG_DIR` 的处理类似），或提供一个更稳定的配置入口（例如从 config 读取）。
-   - 结论：Full Compat 的“自动化”能力应当带版本门槛：仅在基座具备动态 flag（或其它稳定契约）时启用，否则只能做 warn + 文档指导。
-
-5) **副作用边界：`process.env` 是进程级全局**
-   - 这意味着：即便 Oh-My 的 compat 配置是“项目级”，一旦选择 `enforce_suggest` 并写入 env，会影响同一 OpenCode 进程内的其它项目/session。
-   - 建议：在文档中明确该行为；实现上做到：
-     - 只在 `enabled=true` 且 `mode="enforce_suggest"` 时触发
-     - 只在 forkStrategy 为缺省/auto 时写入（`suggest/off` 不动）
-     - 打一条清晰的一次性 log/warn，便于定位“是谁改了 forkStrategy”
+4) **兼容判断所依赖的数据结构是否稳定？**
+   - 风险：OpenCode SDK 的 `Config` 类型可能滞后于基座实际返回字段（例如新加的 `product`）。
+   - 建议：插件侧只解析 `product.mode` / `product.forkStrategy` 这两个最小字段，并且“解析失败就降级”为 env-only 行为。
 
 ---
 

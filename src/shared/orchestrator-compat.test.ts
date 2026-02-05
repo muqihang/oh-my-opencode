@@ -16,6 +16,52 @@ describe("getOrchestratorForkStrategyCompatWarning", () => {
     expect(result.message).toContain("OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest")
   })
 
+  test("does not warn when product.mode is programming (base defaults to suggest)", () => {
+    // #given
+    const env: Record<string, string | undefined> = {
+      OPENCODE_EXPERIMENTAL_ORCHESTRATOR: "1",
+    }
+
+    // #when
+    const result = getOrchestratorForkStrategyCompatWarning(env, {
+      product: { mode: "programming" },
+    })
+
+    // #then
+    expect(result.shouldWarn).toBe(false)
+  })
+
+  test("does not warn when product.mode is legal (base defaults to suggest)", () => {
+    // #given
+    const env: Record<string, string | undefined> = {
+      OPENCODE_EXPERIMENTAL_ORCHESTRATOR: "1",
+      OPENCODE_ORCHESTRATOR_FORK_STRATEGY: "auto",
+    }
+
+    // #when
+    const result = getOrchestratorForkStrategyCompatWarning(env, {
+      product: { mode: "legal" },
+    })
+
+    // #then
+    expect(result.shouldWarn).toBe(false)
+  })
+
+  test("warns when product.forkStrategy explicitly forces auto (even in programming mode)", () => {
+    // #given
+    const env: Record<string, string | undefined> = {
+      OPENCODE_EXPERIMENTAL_ORCHESTRATOR: "1",
+    }
+
+    // #when
+    const result = getOrchestratorForkStrategyCompatWarning(env, {
+      product: { mode: "programming", forkStrategy: "auto" },
+    })
+
+    // #then
+    expect(result.shouldWarn).toBe(true)
+  })
+
   test("warns when experimental orchestrator is enabled and forkStrategy is auto", () => {
     // #given
     const env: Record<string, string | undefined> = {
@@ -73,4 +119,3 @@ describe("getOrchestratorForkStrategyCompatWarning", () => {
     expect(result.shouldWarn).toBe(false)
   })
 })
-

@@ -26,7 +26,29 @@ Is it a quick fix or simple task?
 
 OpenCode base now supports a **single-session orchestrator** mode that can automatically dispatch tasks when enabled. Oh-My-OpenCode also provides orchestration/dispatching. If both are configured to dispatch, you may see **double-delegation** or “steering wheel” conflicts.
 
-If you want **Oh-My-OpenCode to own dispatching** (recommended when using multi-session orchestration), set:
+If you want **Oh-My-OpenCode to own dispatching** (recommended when using multi-session orchestration), prefer a **config-first** setup (no env guessing).
+
+### Recommended (config-first): set OpenCode product mode / fork strategy
+
+In your OpenCode config (`opencode.json` / `opencode.jsonc`), set either:
+
+```jsonc
+{
+  "product": { "mode": "programming" }
+}
+```
+
+Or explicitly:
+
+```jsonc
+{
+  "product": { "forkStrategy": "suggest" }
+}
+```
+
+### Fallback (env-based): set env vars before launching OpenCode
+
+If you cannot (or don’t want to) update OpenCode config, you can still use env vars:
 
 ```bash
 export OPENCODE_EXPERIMENTAL_ORCHESTRATOR=1

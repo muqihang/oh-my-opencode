@@ -171,16 +171,16 @@ delegate_task 是 oh-my 的“派工 API”，它本质上做：
 ### 6.2 现有最小兼容层（已实现）
 - 兼容提示（纯函数）：`src/shared/orchestrator-compat.ts`
 - 启动一次性 warn（可选开启）：`experimental.opencode_orchestrator_compat.enabled`
-- 推荐：当你希望 **oh-my 负责派工** 时，设置：
-  - `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`
+- 推荐（config-first）：当你希望 **oh-my 负责派工** 时，在 OpenCode 配置中设置：
+  - `product.mode=programming`（推荐）
+  - 或 `product.forkStrategy=suggest`（显式）
+  - env 仅作为兜底：`OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest`（启动前设置）
 
 用户文档：`docs/orchestration-guide.md`（已包含）
 
 工程注意：
-- OpenCode 基座侧的 `Flag.OPENCODE_ORCHESTRATOR_FORK_STRATEGY` 可能在模块加载时读取 env 并缓存为常量；因此“运行时修改 env”不一定可靠。
-- 最稳妥做法：在启动 OpenCode 之前就把 `OPENCODE_ORCHESTRATOR_FORK_STRATEGY=suggest` 设置好。
-- 若要在插件侧实现“可选自动化 enforce”，需要基座把该 flag 改为动态 getter（或提供其它稳定配置入口）。
-- 另外：`process.env` 是进程级全局——如果未来做 `enforce_suggest`，它会影响同一进程内的其它项目/session，需要在行为与文档里明确。
+- 兼容判断优先读取 OpenCode base 配置（`product.*`）；读取失败才退回 env（避免误报）。
+- `process.env` 是进程级全局，且基座可能在模块加载时读取 env 并缓存；因此不要依赖“运行时改 env”来实现兼容。
 
 > 进一步的“完全兼容 + 自动协作”方案（例如：基座输出 plan/artifacts，oh-my 消费并转成 boulder plan）属于下一阶段设计（见本仓库后续 design doc）。
 
