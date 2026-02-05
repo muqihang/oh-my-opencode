@@ -116,6 +116,7 @@ describe("atlas hook", () => {
           opencode_base_artifacts_bridge: {
             enabled: true,
             inject_to_delegate_task: true,
+            verbose: false,
           },
         },
         directory: TEST_DIR,
@@ -164,6 +165,7 @@ describe("atlas hook", () => {
           opencode_base_artifacts_bridge: {
             enabled: true,
             inject_to_delegate_task: true,
+            verbose: false,
           },
         },
         directory: TEST_DIR,
@@ -213,6 +215,7 @@ describe("atlas hook", () => {
           opencode_base_artifacts_bridge: {
             enabled: true,
             inject_to_delegate_task: true,
+            verbose: false,
           },
         },
         directory: TEST_DIR,

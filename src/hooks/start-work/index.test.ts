@@ -403,7 +403,7 @@ describe("start-work hook", () => {
       )
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: false } },
       })
 
       const output = {
@@ -459,7 +459,7 @@ describe("start-work hook", () => {
       )
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: false } },
       })
 
       const output = {
@@ -485,7 +485,7 @@ describe("start-work hook", () => {
       writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true, verbose: true } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: true } },
       })
 
       const output = {
