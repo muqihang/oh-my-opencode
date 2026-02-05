@@ -18,8 +18,13 @@ export interface PluginExtendedConfig {
 
 const USER_CONFIG_PATH = join(getOpenCodeConfigDir({ binary: "opencode" }), "opencode-cc-plugin.json")
 
-function getProjectConfigPath(): string {
-  return join(process.cwd(), ".opencode", "opencode-cc-plugin.json")
+export interface LoadPluginExtendedConfigOptions {
+  directory?: string
+  userConfigPath?: string
+}
+
+function getProjectConfigPath(directory?: string): string {
+  return join(directory ?? process.cwd(), ".opencode", "opencode-cc-plugin.json")
 }
 
 async function loadConfigFromPath(path: string): Promise<PluginExtendedConfig | null> {
@@ -52,9 +57,14 @@ function mergeDisabledHooks(
   }
 }
 
-export async function loadPluginExtendedConfig(): Promise<PluginExtendedConfig> {
-  const userConfig = await loadConfigFromPath(USER_CONFIG_PATH)
-  const projectConfig = await loadConfigFromPath(getProjectConfigPath())
+export async function loadPluginExtendedConfig(
+  options: LoadPluginExtendedConfigOptions = {}
+): Promise<PluginExtendedConfig> {
+  const userConfigPath = options.userConfigPath ?? USER_CONFIG_PATH
+  const projectConfigPath = getProjectConfigPath(options.directory)
+
+  const userConfig = await loadConfigFromPath(userConfigPath)
+  const projectConfig = await loadConfigFromPath(projectConfigPath)
 
   const merged: PluginExtendedConfig = {
     disabledHooks: mergeDisabledHooks(

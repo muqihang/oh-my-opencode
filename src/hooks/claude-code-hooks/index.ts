@@ -48,7 +48,7 @@ export function createClaudeCodeHooksHook(
       }
 
       const claudeConfig = await loadClaudeHooksConfig()
-      const extendedConfig = await loadPluginExtendedConfig()
+      const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const preCompactCtx: PreCompactContext = {
         sessionId: input.sessionID,
@@ -87,7 +87,7 @@ export function createClaudeCodeHooksHook(
       }
 
       const claudeConfig = await loadClaudeHooksConfig()
-      const extendedConfig = await loadPluginExtendedConfig()
+      const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const textParts = output.parts.filter((p) => p.type === "text" && p.text)
       const prompt = textParts.map((p) => p.text ?? "").join("\n")
@@ -196,7 +196,7 @@ export function createClaudeCodeHooksHook(
       }
 
       const claudeConfig = await loadClaudeHooksConfig()
-      const extendedConfig = await loadPluginExtendedConfig()
+      const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       recordToolUse(input.sessionID, input.tool, output.args as Record<string, unknown>)
 
@@ -243,7 +243,7 @@ export function createClaudeCodeHooksHook(
       }
 
       const claudeConfig = await loadClaudeHooksConfig()
-      const extendedConfig = await loadPluginExtendedConfig()
+      const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const cachedInput = getToolInput(input.sessionID, input.tool, input.callID) || {}
 
@@ -349,7 +349,7 @@ export function createClaudeCodeHooksHook(
         if (!sessionID) return
 
         const claudeConfig = await loadClaudeHooksConfig()
-        const extendedConfig = await loadPluginExtendedConfig()
+        const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
         const errorStateBefore = sessionErrorState.get(sessionID)
         const endedWithErrorBefore = errorStateBefore?.hasError === true
