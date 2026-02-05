@@ -657,3 +657,21 @@ describe("OhMyOpenCodeConfigSchema - experimental.opencode_orchestrator_compat",
     }
   })
 })
+
+describe("OhMyOpenCodeConfigSchema - experimental.opencode_base_artifacts_bridge", () => {
+  test("accepts experimental base artifacts bridge config", () => {
+    //#given - config with base artifacts bridge enabled
+    const input = {
+      experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+    }
+
+    //#when - parse schema
+    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    //#then - should succeed and keep enabled=true
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.enabled).toBe(true)
+    }
+  })
+})
