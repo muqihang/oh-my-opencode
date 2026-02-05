@@ -211,6 +211,26 @@ You can control related features in `oh-my-opencode.json`.
 
 Oh-My-OpenCode sometimes writes large chunks of text to disk and injects a short `<context_pointer>` instead of pasting the full content into the chat context. This keeps prompts small while preserving a stable “paper trail” on disk.
 
+**Recommended config (commercial / multi-plugin friendly):**
+
+Create or edit your project config at `.opencode/oh-my-opencode.jsonc` (or `.opencode/oh-my-opencode.json`) and add:
+
+```jsonc
+{
+  "experimental": {
+    "context_capsules": {
+      // Keep plugin artifacts in the plugin namespace (recommended)
+      "dir": ".sisyphus/context-capsules",
+
+      // Recommended for audit/debugging: when tool output is truncated in chat,
+      // keep the full raw output on disk and attach a short pointer.
+      // If you prefer fewer disk writes, leave this as false.
+      "preserve_truncated_tool_output": true
+    }
+  }
+}
+```
+
 Configuration lives under `experimental.context_capsules`:
 
 ```jsonc
