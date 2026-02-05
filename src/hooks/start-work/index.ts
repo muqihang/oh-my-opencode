@@ -1,4 +1,5 @@
 import type { PluginInput } from "@opencode-ai/plugin"
+import type { ExperimentalConfig } from "../../config"
 import {
   readBoulderState,
   writeBoulderState,
@@ -9,8 +10,15 @@ import {
   getPlanName,
   clearBoulderState,
 } from "../../features/boulder-state"
+import { appendFileSync, existsSync, mkdirSync } from "node:fs"
+import { join } from "node:path"
 import { log } from "../../shared/logger"
 import { getSessionAgent, updateSessionAgent } from "../../features/claude-code-session-state"
+import {
+  readBaseEvidenceManifest,
+  renderBaseEvidenceIndex,
+  selectBaseEvidenceEntries,
+} from "../../shared/opencode-base-evidence-bridge"
 
 export const HOOK_NAME = "start-work"
 
@@ -46,7 +54,10 @@ function findPlanByName(plans: string[], requestedName: string): string | null {
   return partialMatch || null
 }
 
-export function createStartWorkHook(ctx: PluginInput) {
+export function createStartWorkHook(
+  ctx: PluginInput,
+  options?: { experimental?: ExperimentalConfig },
+) {
   return {
     "chat.message": async (
       input: StartWorkHookInput,
@@ -81,7 +92,8 @@ export function createStartWorkHook(ctx: PluginInput) {
       const timestamp = new Date().toISOString()
 
       let contextInfo = ""
-      
+      let bridgePlanName: string | null = null
+
       const explicitPlanName = extractUserRequestPlanName(promptText)
       
       if (explicitPlanName) {
@@ -107,6 +119,7 @@ All ${progress.total} tasks are done. Create a new plan with: /plan "your task"`
             }
             const newState = createBoulderState(matchedPlan, sessionId)
             writeBoulderState(ctx.directory, newState)
+            bridgePlanName = newState.plan_name
             
             contextInfo = `
 ## Auto-Selected Plan
@@ -149,6 +162,7 @@ No incomplete plans available. Create a new plan with: /plan "your task"`
         
         if (!progress.isComplete) {
           appendSessionId(ctx.directory, sessionId)
+          bridgePlanName = existingState.plan_name
           contextInfo = `
 ## Active Work Session Found
 
@@ -192,6 +206,7 @@ All ${plans.length} plan(s) are complete. Create a new plan with: /plan "your ta
           const progress = getPlanProgress(planPath)
           const newState = createBoulderState(planPath, sessionId)
           writeBoulderState(ctx.directory, newState)
+          bridgePlanName = newState.plan_name
 
           contextInfo += `
 
@@ -224,6 +239,60 @@ ${planList}
 
 Ask the user which plan to work on. Present the options above and wait for their response.
 </system-reminder>`
+        }
+      }
+
+      if (
+        options?.experimental?.opencode_base_artifacts_bridge?.enabled === true &&
+        bridgePlanName
+      ) {
+        try {
+          const manifest = readBaseEvidenceManifest({
+            baseDir: ctx.directory,
+            sessionId,
+          })
+
+          if (!manifest) {
+            log(`[${HOOK_NAME}] Base evidence manifest missing or invalid`, {
+              sessionID: input.sessionID,
+            })
+          } else {
+            const manifestPath = `.opencode/evidence/${sessionId}/manifest.json`
+            const picked = selectBaseEvidenceEntries(manifest.entries)
+            const index = renderBaseEvidenceIndex({
+              sessionId,
+              planName: bridgePlanName,
+              manifestPath,
+              entries: picked,
+            })
+
+            const notepadDir = join(
+              ctx.directory,
+              ".sisyphus",
+              "notepads",
+              bridgePlanName,
+            )
+            mkdirSync(notepadDir, { recursive: true })
+
+            const indexPath = join(notepadDir, "opencode-base-evidence.md")
+            const indexRelPath = `.sisyphus/notepads/${bridgePlanName}/opencode-base-evidence.md`
+            const sectionTimestamp = new Date().toISOString()
+            const hasExisting = existsSync(indexPath)
+            const section = [
+              hasExisting ? "\n\n---\n\n" : "",
+              `## OpenCode base evidence bridge (${sectionTimestamp})\n\n`,
+              index.trimEnd(),
+              "\n",
+            ].join("")
+
+            appendFileSync(indexPath, section, "utf8")
+            contextInfo += `\n\n## OpenCode Base Evidence Index\n\nWrote: \`${indexRelPath}\``
+          }
+        } catch (error) {
+          log(`[${HOOK_NAME}] Base evidence bridge failed (ignored)`, {
+            sessionID: input.sessionID,
+            error: String(error),
+          })
         }
       }
 

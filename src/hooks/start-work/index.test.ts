@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach, spyOn } from "bun:test"
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir, homedir } from "node:os"
 import { createStartWorkHook } from "./index"
@@ -375,6 +375,103 @@ describe("start-work hook", () => {
       // #then - should find plan by partial match
       expect(output.parts[0].text).toContain("2026-01-15-feature-implementation")
       expect(output.parts[0].text).toContain("Auto-Selected Plan")
+    })
+
+    test("should bridge opencode base evidence into notepads when enabled", async () => {
+      //#given - a single incomplete plan and a base evidence manifest
+      const sessionId = "ses_123"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const manifestDir = join(TEST_DIR, ".opencode", "evidence", sessionId)
+      mkdirSync(manifestDir, { recursive: true })
+      writeFileSync(
+        join(manifestDir, "manifest.json"),
+        JSON.stringify({
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/ses_123/orchestrator/01/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      //#when - /start-work triggers
+      await hook["chat.message"]({ sessionID: sessionId }, output)
+
+      //#then - notepad file exists and output includes path
+      const notePath = join(
+        TEST_DIR,
+        ".sisyphus",
+        "notepads",
+        "demo",
+        "opencode-base-evidence.md",
+      )
+      expect(existsSync(notePath)).toBe(true)
+      const content = readFileSync(notePath, "utf8")
+      expect(content).toContain("orchestrator-plan")
+      expect(content).toContain("deadbeef")
+      expect(output.parts[0].text).toContain("opencode-base-evidence.md")
+    })
+
+    test("should append base evidence note with timestamp when file already exists", async () => {
+      //#given - existing note content + plan + manifest
+      const sessionId = "ses_123"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const notepadDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      mkdirSync(notepadDir, { recursive: true })
+      const notePath = join(notepadDir, "opencode-base-evidence.md")
+      writeFileSync(notePath, "OLD CONTENT\n", "utf8")
+
+      const manifestDir = join(TEST_DIR, ".opencode", "evidence", sessionId)
+      mkdirSync(manifestDir, { recursive: true })
+      writeFileSync(
+        join(manifestDir, "manifest.json"),
+        JSON.stringify({
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/ses_123/orchestrator/01/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      //#when
+      await hook["chat.message"]({ sessionID: sessionId }, output)
+
+      //#then - file keeps old content and includes a new timestamped section
+      const content = readFileSync(notePath, "utf8")
+      expect(content).toContain("OLD CONTENT")
+      expect(content).toContain("orchestrator-plan")
+      expect(content).toMatch(/\d{4}-\d{2}-\d{2}T/)
     })
   })
 

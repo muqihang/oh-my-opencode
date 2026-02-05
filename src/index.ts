@@ -249,7 +249,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
     : null;
 
   const startWork = isHookEnabled("start-work")
-    ? createStartWorkHook(ctx)
+    ? createStartWorkHook(ctx, { experimental: pluginConfig.experimental })
     : null;
 
   const prometheusMdOnly = isHookEnabled("prometheus-md-only")
