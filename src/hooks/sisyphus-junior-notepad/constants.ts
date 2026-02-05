@@ -1,6 +1,9 @@
+import { createSystemDirective, SystemDirectiveTypes } from "../../shared/system-directive"
+
 export const HOOK_NAME = "sisyphus-junior-notepad"
 
 export const NOTEPAD_DIRECTIVE = `
+${createSystemDirective(SystemDirectiveTypes.NOTEPAD_CONTEXT)}
 <Work_Context>
 ## Notepad Location (for recording learnings)
 NOTEPAD PATH: .sisyphus/notepads/{plan-name}/

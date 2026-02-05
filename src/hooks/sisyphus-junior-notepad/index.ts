@@ -1,6 +1,6 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import { isCallerOrchestrator } from "../../shared/session-utils"
-import { SYSTEM_DIRECTIVE_PREFIX } from "../../shared/system-directive"
+import { createSystemDirective, SystemDirectiveTypes } from "../../shared/system-directive"
 import { log } from "../../shared/logger"
 import { HOOK_NAME, NOTEPAD_DIRECTIVE } from "./constants"
 
@@ -28,13 +28,12 @@ export function createSisyphusJuniorNotepadHook(ctx: PluginInput) {
         return
       }
 
-      // 4. Check for double injection
-      if (prompt.includes(SYSTEM_DIRECTIVE_PREFIX)) {
+      const marker = createSystemDirective(SystemDirectiveTypes.NOTEPAD_CONTEXT)
+      if (prompt.includes(marker)) {
         return
       }
 
-      // 5. Prepend directive
-      output.args.prompt = NOTEPAD_DIRECTIVE + prompt
+      output.args.prompt = `<system-reminder>${NOTEPAD_DIRECTIVE}</system-reminder>\n` + prompt
 
       // 6. Log injection
       log(`[${HOOK_NAME}] Injected notepad directive to delegate_task`, {
