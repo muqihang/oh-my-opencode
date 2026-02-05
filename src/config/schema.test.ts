@@ -741,3 +741,50 @@ describe("OhMyOpenCodeConfigSchema - experimental.opencode_base_artifacts_bridge
     }
   })
 })
+
+describe("OhMyOpenCodeConfigSchema - experimental.context_capsules", () => {
+  test("accepts experimental context capsules config override", () => {
+    // #given
+    const input = {
+      experimental: {
+        context_capsules: {
+          dir: ".sisyphus/context-capsules",
+          preserve_truncated_tool_output: true,
+        },
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental?.context_capsules).toEqual({
+        dir: ".sisyphus/context-capsules",
+        preserve_truncated_tool_output: true,
+      })
+    }
+  })
+
+  test("defaults dir and preserve_truncated_tool_output when object provided", () => {
+    // #given
+    const input = {
+      experimental: {
+        context_capsules: {},
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental?.context_capsules).toEqual({
+        dir: ".opencode/context-capsules",
+        preserve_truncated_tool_output: false,
+      })
+    }
+  })
+})

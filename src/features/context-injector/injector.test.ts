@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "bun:test"
-import { mkdtempSync } from "node:fs"
+import { existsSync, mkdtempSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { ContextCollector } from "./collector"
@@ -195,7 +195,13 @@ describe("createContextInjectorMessagesTransformHook", () => {
   })
 
   it("spills large pending context to a file pointer instead of pasting", async () => {
-    const hook = createContextInjectorMessagesTransformHook(collector)
+    const hook = createContextInjectorMessagesTransformHook(collector, {
+      experimental: {
+        context_capsules: {
+          dir: ".sisyphus/context-capsules",
+        },
+      },
+    } as never)
     const sessionID = "ses_big"
     const tempDir = mkdtempSync(join(tmpdir(), "omo-pointer-"))
 
@@ -215,5 +221,11 @@ describe("createContextInjectorMessagesTransformHook", () => {
     expect(injected).toContain("<context_pointer>")
     expect(injected).toContain("sha256:")
     expect(injected.length).toBeLessThan(4000)
+
+    const pathMatch = injected.match(/\npath:\s*(.+)\n/)
+    expect(pathMatch).not.toBeNull()
+    const capsulePath = pathMatch?.[1]?.trim() ?? ""
+    expect(capsulePath).toContain(".sisyphus/context-capsules")
+    expect(existsSync(capsulePath)).toBe(true)
   })
 })

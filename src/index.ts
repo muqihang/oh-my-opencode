@@ -214,7 +214,9 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
     ? createKeywordDetectorHook(ctx, contextCollector)
     : null;
   const contextInjectorMessagesTransform =
-    createContextInjectorMessagesTransformHook(contextCollector);
+    createContextInjectorMessagesTransformHook(contextCollector, {
+      experimental: pluginConfig.experimental,
+    });
   const agentUsageReminder = isHookEnabled("agent-usage-reminder")
     ? createAgentUsageReminderHook(ctx)
     : null;

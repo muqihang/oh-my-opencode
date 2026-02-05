@@ -7,6 +7,11 @@ export interface PointerizeInput {
   text: string
   maxChars: number
   baseDir: string
+  /**
+   * Directory (relative to baseDir) to store context capsules.
+   * Defaults to `.opencode/context-capsules` to preserve existing behavior.
+   */
+  dir?: string
 }
 
 export type PointerizeResult =
@@ -23,7 +28,7 @@ export function pointerize(input: PointerizeInput): PointerizeResult {
 
   const sha256 = createHash("sha256").update(input.text, "utf8").digest("hex")
   const baseDir = resolve(input.baseDir || process.cwd())
-  const capsuleDir = join(baseDir, ".opencode", "context-capsules")
+  const capsuleDir = resolve(baseDir, input.dir ?? ".opencode/context-capsules")
   const filePath = join(capsuleDir, `${sha256}.md`)
 
   mkdirSync(capsuleDir, { recursive: true })
