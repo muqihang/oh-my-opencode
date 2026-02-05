@@ -97,16 +97,20 @@ Oh-My 配置新增：
 默认 `false`（缺省不生效），确保不打扰老用户。
 
 ### 3.5 allowlist（v0 最小集合）
-我们只桥接“稳定且高价值”的 kinds（后续可以扩展）：
-- `orchestrator-plan`
+**v0 实现的 allowlist（已落地）**：我们先只桥接 2 类最关键、最稳定且不易膨胀的产物：
+- `orchestrator-plan`（让子会话知道“基座怎么想的”）
+- `retrieval-hits`（让子会话复用已命中的检索结果指针）
+
+为什么 v0 只做这么少？
+- 这是一个“低风险上生产”的桥：先保证稳定、可测、默认不影响老用户。
+- 某些 kinds（尤其是 `retrieval-snippet`）可能出现大量 entries，直接索引会导致 notepad 过长，反而污染上下文/影响体验。
+
+**后续可扩展的候选（V1/V2 再纳入）**：
 - `orchestrator-features`
-- `orchestrator-worker-role-pack`（可选，偏工程/审计）
-- `retrieval-spec`
-- `retrieval-hits`
-- `retrieval-dedupe`
-- `retrieval-snippet`（可选，体积可能大；索引即可，不必全文注入）
+- `orchestrator-worker-role-pack`（偏审计）
+- `retrieval-spec` / `retrieval-dedupe`
 - `grep-hits`
-- `event-log`（可选，用于定位 tool_broker 的摘要/失败原因）
+- `event-log`（用于定位失败原因）
 
 ### 3.6 失败与降级（必须满足商用）
 - manifest 不存在：不生成索引，不提示（静默）
