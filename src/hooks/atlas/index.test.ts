@@ -11,6 +11,7 @@ import {
 import type { BoulderState } from "../../features/boulder-state"
 
 import { MESSAGE_STORAGE } from "../../features/hook-message-injector"
+import { createSystemDirective, SystemDirectiveTypes } from "../../shared/system-directive"
 
 describe("atlas hook", () => {
    const TEST_DIR = join(tmpdir(), "atlas-test-" + Date.now())
@@ -63,6 +64,176 @@ describe("atlas hook", () => {
     if (existsSync(TEST_DIR)) {
       rmSync(TEST_DIR, { recursive: true, force: true })
     }
+  })
+
+  describe("tool.execute.before handler", () => {
+    test("injects single-task directive even if prompt already contains other system directives", async () => {
+      //#given
+      const sessionID = "session-atlas-pretool-1"
+      setupMessageStorage(sessionID, "atlas")
+      const hook = createAtlasHook(createMockPluginInput())
+
+      const output = {
+        args: {
+          prompt: `${createSystemDirective(SystemDirectiveTypes.PROMETHEUS_READ_ONLY)}\n\nDo the work.`,
+        },
+      }
+
+      //#when
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+
+      //#then
+      const prompt = output.args.prompt as string
+      expect(prompt).toContain(createSystemDirective(SystemDirectiveTypes.SINGLE_TASK_ONLY))
+    })
+
+    test("injects base evidence instruction when enabled and index exists", async () => {
+      //#given
+      const sessionID = "session-atlas-pretool-2"
+      setupMessageStorage(sessionID, "atlas")
+
+      const planPath = join(TEST_DIR, ".sisyphus", "plans", "demo.md")
+      mkdirSync(join(TEST_DIR, ".sisyphus", "plans"), { recursive: true })
+      writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+      const state: BoulderState = {
+        active_plan: planPath,
+        started_at: "2026-02-05T00:00:00Z",
+        session_ids: [sessionID],
+        plan_name: "demo",
+      }
+      writeBoulderState(TEST_DIR, state)
+
+      const indexDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      mkdirSync(indexDir, { recursive: true })
+      writeFileSync(join(indexDir, "opencode-base-evidence.md"), "# opencode-base-evidence\n")
+
+      const hook = createAtlasHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            inject_to_delegate_task: true,
+          },
+        },
+        directory: TEST_DIR,
+      })
+
+      const output = {
+        args: {
+          prompt: "Do exactly one thing.",
+        },
+      }
+
+      //#when
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+
+      //#then
+      const prompt = output.args.prompt as string
+      expect(prompt).toContain(".sisyphus/notepads/demo/opencode-base-evidence.md")
+    })
+
+    test("does not duplicate base evidence instruction across repeated calls", async () => {
+      //#given
+      const sessionID = "session-atlas-pretool-3"
+      setupMessageStorage(sessionID, "atlas")
+
+      const planPath = join(TEST_DIR, ".sisyphus", "plans", "demo.md")
+      mkdirSync(join(TEST_DIR, ".sisyphus", "plans"), { recursive: true })
+      writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+      const state: BoulderState = {
+        active_plan: planPath,
+        started_at: "2026-02-05T00:00:00Z",
+        session_ids: [sessionID],
+        plan_name: "demo",
+      }
+      writeBoulderState(TEST_DIR, state)
+
+      const indexDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      mkdirSync(indexDir, { recursive: true })
+      writeFileSync(join(indexDir, "opencode-base-evidence.md"), "# opencode-base-evidence\n")
+
+      const hook = createAtlasHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            inject_to_delegate_task: true,
+          },
+        },
+        directory: TEST_DIR,
+      })
+
+      const output = {
+        args: {
+          prompt: "Do exactly one thing.",
+        },
+      }
+
+      //#when
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+
+      //#then
+      const prompt = output.args.prompt as string
+      const occurrences = prompt.split("opencode-base-evidence.md").length - 1
+      expect(occurrences).toBe(1)
+    })
+
+    test("does not inject base evidence instruction when index file is missing", async () => {
+      //#given
+      const sessionID = "session-atlas-pretool-4"
+      setupMessageStorage(sessionID, "atlas")
+
+      const planPath = join(TEST_DIR, ".sisyphus", "plans", "demo.md")
+      mkdirSync(join(TEST_DIR, ".sisyphus", "plans"), { recursive: true })
+      writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+      const state: BoulderState = {
+        active_plan: planPath,
+        started_at: "2026-02-05T00:00:00Z",
+        session_ids: [sessionID],
+        plan_name: "demo",
+      }
+      writeBoulderState(TEST_DIR, state)
+
+      const hook = createAtlasHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            inject_to_delegate_task: true,
+          },
+        },
+        directory: TEST_DIR,
+      })
+
+      const output = {
+        args: {
+          prompt: "Do exactly one thing.",
+        },
+      }
+
+      //#when
+      await hook["tool.execute.before"](
+        { tool: "delegate_task", sessionID },
+        output
+      )
+
+      //#then
+      const prompt = output.args.prompt as string
+      expect(prompt).not.toContain("opencode-base-evidence.md")
+    })
   })
 
   describe("tool.execute.after handler", () => {

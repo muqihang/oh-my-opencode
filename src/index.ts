@@ -290,7 +290,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   });
 
   const atlasHook = isHookEnabled("atlas")
-    ? createAtlasHook(ctx, { directory: ctx.directory, backgroundManager })
+    ? createAtlasHook(ctx, { directory: ctx.directory, backgroundManager, experimental: pluginConfig.experimental })
     : null;
 
   initTaskToastManager(ctx.client);

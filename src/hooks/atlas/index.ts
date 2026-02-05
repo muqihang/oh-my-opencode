@@ -10,9 +10,11 @@ import {
 import { getMainSessionID, subagentSessions } from "../../features/claude-code-session-state"
 import { findNearestMessageWithFields, MESSAGE_STORAGE } from "../../features/hook-message-injector"
 import { log } from "../../shared/logger"
-import { createSystemDirective, SYSTEM_DIRECTIVE_PREFIX, SystemDirectiveTypes } from "../../shared/system-directive"
+import { createSystemDirective, SystemDirectiveTypes } from "../../shared/system-directive"
 import { isCallerOrchestrator, getMessageDir } from "../../shared/session-utils"
 import type { BackgroundManager } from "../../features/background-agent"
+import type { ExperimentalConfig } from "../../config/schema"
+import { NOTEPAD_DIRECTIVE } from "../sisyphus-junior-notepad/constants"
 
 export const HOOK_NAME = "atlas"
 
@@ -391,6 +393,7 @@ const CONTINUATION_COOLDOWN_MS = 5000
 export interface AtlasHookOptions {
   directory: string
   backgroundManager?: BackgroundManager
+  experimental?: ExperimentalConfig
 }
 
 function isAbortError(error: unknown): boolean {
@@ -412,6 +415,34 @@ function isAbortError(error: unknown): boolean {
   }
 
   return false
+}
+
+function escapeRegExp(input: string): string {
+  return input.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function stripSystemReminderBlocks(input: string, markers: string[]): string {
+  if (markers.length === 0) {
+    return input
+  }
+
+  const escaped = markers.map(escapeRegExp).join("|")
+  const pattern = `<system-reminder>[\\s\\S]*?(?:${escaped})[\\s\\S]*?<\\/system-reminder>\\s*`
+  return input.replace(new RegExp(pattern, "g"), "")
+}
+
+function buildBaseEvidenceDirective(planName: string): string {
+  const index = `.sisyphus/notepads/${planName}/opencode-base-evidence.md`
+  return `
+${createSystemDirective(SystemDirectiveTypes.OPENCODE_BASE_EVIDENCE)}
+
+**Working Set (OpenCode base evidence)**
+
+Before running any new retrieval/grep/scan:
+1) Read: \`${index}\`
+2) Reuse pointers/paths from that index first
+3) Only if missing, do new retrieval
+`
 }
 
 export function createAtlasHook(
@@ -650,12 +681,48 @@ export function createAtlasHook(
       // Check delegate_task - inject single-task directive
       if (input.tool === "delegate_task") {
         const prompt = output.args.prompt as string | undefined
-        if (prompt && !prompt.includes(SYSTEM_DIRECTIVE_PREFIX)) {
-          output.args.prompt = `<system-reminder>${SINGLE_TASK_DIRECTIVE}</system-reminder>\n` + prompt
-          log(`[${HOOK_NAME}] Injected single-task directive to delegate_task`, {
-            sessionID: input.sessionID,
-          })
-        }
+        if (!prompt) return
+
+        const singleTaskMarker = createSystemDirective(SystemDirectiveTypes.SINGLE_TASK_ONLY)
+        const notepadMarker = createSystemDirective(SystemDirectiveTypes.NOTEPAD_CONTEXT)
+        const baseEvidenceMarker = createSystemDirective(SystemDirectiveTypes.OPENCODE_BASE_EVIDENCE)
+
+        const bridge = options?.experimental?.opencode_base_artifacts_bridge
+        const bridgeEnabled = bridge?.enabled === true
+        const injectEnabled = bridge?.inject_to_delegate_task === true
+
+        const boulderState = readBoulderState(options?.directory ?? ctx.directory)
+        const planName = boulderState?.plan_name
+        const indexAbs = planName
+          ? join(options?.directory ?? ctx.directory, ".sisyphus", "notepads", planName, "opencode-base-evidence.md")
+          : undefined
+        const shouldInjectBaseEvidence =
+          bridgeEnabled &&
+          injectEnabled &&
+          planName !== undefined &&
+          indexAbs !== undefined &&
+          existsSync(indexAbs)
+
+        const markers = [
+          singleTaskMarker,
+          notepadMarker,
+          ...(shouldInjectBaseEvidence ? [baseEvidenceMarker] : []),
+        ]
+
+        const cleaned = stripSystemReminderBlocks(prompt, markers).trimStart()
+        const prelude = [
+          `<system-reminder>${SINGLE_TASK_DIRECTIVE}</system-reminder>\n`,
+          `<system-reminder>${NOTEPAD_DIRECTIVE}</system-reminder>\n`,
+          ...(shouldInjectBaseEvidence && planName
+            ? [`<system-reminder>${buildBaseEvidenceDirective(planName)}</system-reminder>\n`]
+            : []),
+        ].join("")
+
+        output.args.prompt = prelude + cleaned
+        log(`[${HOOK_NAME}] delegate_task prompt prelude composed`, {
+          sessionID: input.sessionID,
+          baseEvidenceInjected: shouldInjectBaseEvidence,
+        })
       }
     },
 
