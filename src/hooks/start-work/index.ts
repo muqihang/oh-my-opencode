@@ -291,9 +291,12 @@ Ask the user which plan to work on. Present the options above and wait for their
 
             const snapshotPath = join(notepadDir, "opencode-base-evidence.json")
             const historyPath = join(notepadDir, "opencode-base-evidence.history.jsonl")
+            const snapshotRelPath = `.sisyphus/notepads/${bridgePlanName}/opencode-base-evidence.json`
+            const historyRelPath = `.sisyphus/notepads/${bridgePlanName}/opencode-base-evidence.history.jsonl`
 
             let shouldAppendMarkdown = true
             let shouldAppendHistory = writeJson
+            let noChangesDetected = false
 
             if (writeJson) {
               const snapshot = createBaseEvidenceSnapshot({
@@ -321,9 +324,7 @@ Ask the user which plan to work on. Present the options above and wait for their
               if (previousHash && previousHash === snapshot.hash) {
                 shouldAppendMarkdown = false
                 shouldAppendHistory = false
-                if (verbose) {
-                  contextInfo += `\n\n## OpenCode Base Evidence Index\n\nNo changes detected; skipped append.`
-                }
+                noChangesDetected = true
               } else {
                 try {
                   writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + "\n", "utf8")
@@ -345,6 +346,26 @@ Ask the user which plan to work on. Present the options above and wait for their
                   }
                 }
               }
+            }
+
+            if (verbose) {
+              const allowlistLabel = allowlist.length > 0 ? allowlist.join(", ") : "(empty)"
+
+              contextInfo += [
+                "",
+                "## OpenCode Base Evidence Bridge (verbose)",
+                "",
+                `Allowlist kinds: ${allowlistLabel}`,
+                `Picked entries: ${picked.length}/${manifest.entries.length}`,
+                `Index (md): \`${indexRelPath}\``,
+                ...(writeJson
+                  ? [
+                    `Snapshot (json): \`${snapshotRelPath}\``,
+                    `History (jsonl): \`${historyRelPath}\``,
+                  ]
+                  : []),
+                ...(noChangesDetected ? ["", "No changes detected; skipped append."] : []),
+              ].join("\n")
             }
 
             if (shouldAppendMarkdown) {

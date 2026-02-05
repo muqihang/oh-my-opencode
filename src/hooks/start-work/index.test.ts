@@ -500,6 +500,55 @@ describe("start-work hook", () => {
       expect(output.parts[0].text).toContain("Skipped")
     })
 
+    test("verbose=true + write_json=true surfaces bridge paths when manifest exists", async () => {
+      //#given - a single incomplete plan and a base evidence manifest
+      const sessionId = "ses_123"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const manifestDir = join(TEST_DIR, ".opencode", "evidence", sessionId)
+      mkdirSync(manifestDir, { recursive: true })
+      writeFileSync(
+        join(manifestDir, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/ses_123/orchestrator/01/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            write_json: true,
+            inject_to_delegate_task: false,
+            verbose: true,
+          },
+        },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      //#when
+      await hook["chat.message"]({ sessionID: sessionId }, output)
+
+      //#then - verbose output should include all artifact paths for easy verification
+      expect(output.parts[0].text).toContain("opencode-base-evidence.md")
+      expect(output.parts[0].text).toContain("opencode-base-evidence.json")
+      expect(output.parts[0].text).toContain("opencode-base-evidence.history.jsonl")
+    })
+
     test("write_json=true writes snapshot json and history jsonl", async () => {
       //#given
       const sessionId = "ses_123"
