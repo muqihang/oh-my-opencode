@@ -207,15 +207,17 @@ You can control related features in `oh-my-opencode.json`.
 }
 ```
 
-### Experimental: OpenCode Base Evidence Bridge (v0)
+### Experimental: OpenCode Base Evidence Bridge (v0 + v2)
 
 **What this is:** When you run `/start-work` (and a plan is actually selected/resumed), Oh-My-OpenCode can optionally read the OpenCode base evidence manifest:
 
 - `.opencode/evidence/<sessionId>/manifest.json`
 
-Then it picks an **allowlist** of "key artifacts" (`kind/path/sha256`), renders a Markdown index, and appends it into the plan notepad:
+Then it picks an **allowlist** of "key artifacts" (`kind/path/sha256`) and writes indexes into the plan notepad directory:
 
-- `.sisyphus/notepads/<plan-name>/opencode-base-evidence.md`
+- Human-readable Markdown (v0): `.sisyphus/notepads/<plan-name>/opencode-base-evidence.md`
+- Machine-readable snapshot (v2): `.sisyphus/notepads/<plan-name>/opencode-base-evidence.json`
+- Append-only audit log (v2): `.sisyphus/notepads/<plan-name>/opencode-base-evidence.history.jsonl`
 
 **Why it exists:** Atlas and delegated sub-sessions can quickly find the most important base artifacts (plans, retrieval hits, etc.) without needing to re-run discovery.
 
@@ -223,10 +225,17 @@ Then it picks an **allowlist** of "key artifacts" (`kind/path/sha256`), renders 
 - Default behavior is unchanged (feature is config-gated and **disabled by default**).
 - Read-only for `.opencode/` (never modifies base evidence).
 - Writes only into `.sisyphus/notepads/` (does not change plan file contents or format).
-- Append-only: if `opencode-base-evidence.md` already exists, a new timestamped section is appended (never overwrites).
+- Markdown is append-only: if `opencode-base-evidence.md` already exists, a new timestamped section is appended (never overwrites).
 - Best-effort: any failure is logged and will **not** block `/start-work`.
 
-**How to enable:**
+**v2: change detection (prevents notepad bloat):**
+- When `write_json=true`, Oh-My-OpenCode computes a stable `hash` over `(allowlist + entries)`.
+- If the new hash matches the previous snapshot:
+  - Markdown is **not** appended again
+  - history.jsonl does **not** get a new line
+  - (optional) `verbose=true` will surface a short "No changes" message in `/start-work` output
+
+**How to enable (v0: Markdown only):**
 
 ```jsonc
 {
@@ -236,9 +245,40 @@ Then it picks an **allowlist** of "key artifacts" (`kind/path/sha256`), renders 
 }
 ```
 
-**Allowlist (v0):**
+**How to enable (v2: JSON + history + change detection):**
+
+```jsonc
+{
+  "experimental": {
+    "opencode_base_artifacts_bridge": {
+      "enabled": true,
+      "write_json": true
+    }
+  }
+}
+```
+
+**Allowlist (defaults):**
 - `orchestrator-plan`
 - `retrieval-hits`
+
+**Allowlist override (optional):**
+
+```jsonc
+{
+  "experimental": {
+    "opencode_base_artifacts_bridge": {
+      "enabled": true,
+      "write_json": true,
+      "allowlist": ["orchestrator-plan", "retrieval-hits"]
+    }
+  }
+}
+```
+
+Notes:
+- allowlist affects both the Markdown index and the v2 JSON outputs.
+- Path safety checks still apply (entries must be safe relative paths, no `..`, and must be under `.opencode/`).
 
 ## 7. Best Practices
 

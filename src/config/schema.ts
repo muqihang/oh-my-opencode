@@ -248,6 +248,8 @@ export const ExperimentalConfigSchema = z.object({
     enabled: z.boolean().default(false),
     inject_to_delegate_task: z.boolean().default(false),
     verbose: z.boolean().default(false),
+    write_json: z.boolean().default(false),
+    allowlist: z.array(z.string()).optional(),
   }).optional(),
   /** Compatibility warnings for OpenCode base single-session orchestrator */
   opencode_orchestrator_compat: z.object({

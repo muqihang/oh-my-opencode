@@ -675,6 +675,46 @@ describe("OhMyOpenCodeConfigSchema - experimental.opencode_base_artifacts_bridge
     }
   })
 
+  test("write_json defaults to false", () => {
+    //#given
+    const input = {
+      experimental: { opencode_base_artifacts_bridge: { enabled: true } },
+    }
+
+    //#when
+    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    //#then
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.write_json).toBe(false)
+    }
+  })
+
+  test("accepts allowlist override for base artifacts bridge", () => {
+    //#given
+    const input = {
+      experimental: {
+        opencode_base_artifacts_bridge: {
+          enabled: true,
+          allowlist: ["orchestrator-plan", "retrieval-hits"],
+        },
+      },
+    }
+
+    //#when
+    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    //#then
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.allowlist).toEqual([
+        "orchestrator-plan",
+        "retrieval-hits",
+      ])
+    }
+  })
+
   test("accepts inject_to_delegate_task and verbose flags", () => {
     //#given
     const input = {

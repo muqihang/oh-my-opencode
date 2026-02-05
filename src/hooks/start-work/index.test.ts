@@ -403,7 +403,7 @@ describe("start-work hook", () => {
       )
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: false } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, write_json: false, inject_to_delegate_task: false, verbose: false } },
       })
 
       const output = {
@@ -459,7 +459,7 @@ describe("start-work hook", () => {
       )
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: false } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, write_json: false, inject_to_delegate_task: false, verbose: false } },
       })
 
       const output = {
@@ -485,7 +485,7 @@ describe("start-work hook", () => {
       writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
 
       const hook = createStartWorkHook(createMockPluginInput(), {
-        experimental: { opencode_base_artifacts_bridge: { enabled: true, inject_to_delegate_task: false, verbose: true } },
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, write_json: false, inject_to_delegate_task: false, verbose: true } },
       })
 
       const output = {
@@ -498,6 +498,244 @@ describe("start-work hook", () => {
       //#then
       expect(output.parts[0].text).toContain("OpenCode Base Evidence Index")
       expect(output.parts[0].text).toContain("Skipped")
+    })
+
+    test("write_json=true writes snapshot json and history jsonl", async () => {
+      //#given
+      const sessionId = "ses_123"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const manifestDir = join(TEST_DIR, ".opencode", "evidence", sessionId)
+      mkdirSync(manifestDir, { recursive: true })
+      writeFileSync(
+        join(manifestDir, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/ses_123/orchestrator/01/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            write_json: true,
+            inject_to_delegate_task: false,
+            verbose: false,
+          },
+        },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      //#when
+      await hook["chat.message"]({ sessionID: sessionId }, output)
+
+      //#then
+      const notepadDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      const snapshotPath = join(notepadDir, "opencode-base-evidence.json")
+      const historyPath = join(notepadDir, "opencode-base-evidence.history.jsonl")
+
+      expect(existsSync(snapshotPath)).toBe(true)
+      expect(existsSync(historyPath)).toBe(true)
+
+      const snapshot = JSON.parse(readFileSync(snapshotPath, "utf8"))
+      expect(snapshot.allowlist).toEqual(["orchestrator-plan", "retrieval-hits"])
+      expect(snapshot.entries).toEqual([
+        {
+          kind: "orchestrator-plan",
+          path: ".opencode/artifacts/ses_123/orchestrator/01/orchestrator.plan.json",
+          sha256: "deadbeef",
+        },
+      ])
+      expect(typeof snapshot.hash).toBe("string")
+      expect(snapshot.hash.length).toBeGreaterThan(0)
+
+      const historyLines = readFileSync(historyPath, "utf8")
+        .split("\n")
+        .filter(Boolean)
+      expect(historyLines).toHaveLength(1)
+      const historyEvent = JSON.parse(historyLines[0])
+      expect(historyEvent.hash).toBe(snapshot.hash)
+    })
+
+    test("write_json=true skips markdown append + history when no changes detected", async () => {
+      //#given - first run creates baseline
+      const sessionId1 = "ses_123"
+      const sessionId2 = "ses_456"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            write_json: true,
+            inject_to_delegate_task: false,
+            verbose: false,
+          },
+        },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      // manifest 1
+      const manifestDir1 = join(TEST_DIR, ".opencode", "evidence", sessionId1)
+      mkdirSync(manifestDir1, { recursive: true })
+      writeFileSync(
+        join(manifestDir1, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/shared/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      await hook["chat.message"]({ sessionID: sessionId1 }, output)
+
+      const notepadDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      const mdPath = join(notepadDir, "opencode-base-evidence.md")
+      const historyPath = join(notepadDir, "opencode-base-evidence.history.jsonl")
+
+      const mdBefore = readFileSync(mdPath, "utf8")
+      const historyBefore = readFileSync(historyPath, "utf8")
+
+      // manifest 2 - same entries (but different sessionId / path)
+      const manifestDir2 = join(TEST_DIR, ".opencode", "evidence", sessionId2)
+      mkdirSync(manifestDir2, { recursive: true })
+      writeFileSync(
+        join(manifestDir2, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/shared/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      //#when - second run
+      await hook["chat.message"]({ sessionID: sessionId2 }, output)
+
+      //#then - md content unchanged and history line count unchanged
+      const mdAfter = readFileSync(mdPath, "utf8")
+      const historyAfter = readFileSync(historyPath, "utf8")
+
+      expect(mdAfter).toBe(mdBefore)
+
+      const beforeLines = historyBefore.split("\n").filter(Boolean)
+      const afterLines = historyAfter.split("\n").filter(Boolean)
+      expect(afterLines).toHaveLength(beforeLines.length)
+    })
+
+    test("write_json=true appends markdown + history when manifest entries change", async () => {
+      //#given - first run baseline
+      const sessionId1 = "ses_123"
+      const sessionId2 = "ses_456"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: {
+          opencode_base_artifacts_bridge: {
+            enabled: true,
+            write_json: true,
+            inject_to_delegate_task: false,
+            verbose: false,
+          },
+        },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      // manifest 1
+      const manifestDir1 = join(TEST_DIR, ".opencode", "evidence", sessionId1)
+      mkdirSync(manifestDir1, { recursive: true })
+      writeFileSync(
+        join(manifestDir1, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/shared/orchestrator.plan.json",
+              sha256: "deadbeef",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      await hook["chat.message"]({ sessionID: sessionId1 }, output)
+
+      const notepadDir = join(TEST_DIR, ".sisyphus", "notepads", "demo")
+      const mdPath = join(notepadDir, "opencode-base-evidence.md")
+      const historyPath = join(notepadDir, "opencode-base-evidence.history.jsonl")
+
+      const mdBefore = readFileSync(mdPath, "utf8")
+      const historyBefore = readFileSync(historyPath, "utf8")
+
+      // manifest 2 - changed sha256 (entries changed)
+      const manifestDir2 = join(TEST_DIR, ".opencode", "evidence", sessionId2)
+      mkdirSync(manifestDir2, { recursive: true })
+      writeFileSync(
+        join(manifestDir2, "manifest.json"),
+        JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
+          entries: [
+            {
+              kind: "orchestrator-plan",
+              path: ".opencode/artifacts/shared/orchestrator.plan.json",
+              sha256: "beadfeed",
+            },
+          ],
+        }),
+        "utf8",
+      )
+
+      //#when - second run
+      await hook["chat.message"]({ sessionID: sessionId2 }, output)
+
+      //#then - md content changes and history grows by 1 line
+      const mdAfter = readFileSync(mdPath, "utf8")
+      const historyAfter = readFileSync(historyPath, "utf8")
+
+      expect(mdAfter).not.toBe(mdBefore)
+      expect(mdAfter).toContain("beadfeed")
+
+      const beforeLines = historyBefore.split("\n").filter(Boolean)
+      const afterLines = historyAfter.split("\n").filter(Boolean)
+      expect(afterLines).toHaveLength(beforeLines.length + 1)
     })
   })
 

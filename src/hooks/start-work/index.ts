@@ -10,11 +10,14 @@ import {
   getPlanName,
   clearBoulderState,
 } from "../../features/boulder-state"
-import { appendFileSync, existsSync, mkdirSync } from "node:fs"
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { log } from "../../shared/logger"
 import { getSessionAgent, updateSessionAgent } from "../../features/claude-code-session-state"
 import {
+  DEFAULT_BASE_EVIDENCE_ALLOWLIST,
+  createBaseEvidenceSnapshot,
+  parseBaseEvidenceSnapshot,
   readBaseEvidenceManifest,
   renderBaseEvidenceIndex,
   selectBaseEvidenceEntries,
@@ -247,7 +250,12 @@ Ask the user which plan to work on. Present the options above and wait for their
         bridgePlanName
       ) {
         try {
-          const verbose = options?.experimental?.opencode_base_artifacts_bridge?.verbose === true
+          const bridgeConfig = options?.experimental?.opencode_base_artifacts_bridge
+          const verbose = bridgeConfig?.verbose === true
+          const writeJson = bridgeConfig?.write_json === true
+
+          const allowlist = bridgeConfig?.allowlist ?? DEFAULT_BASE_EVIDENCE_ALLOWLIST
+
           const manifest = readBaseEvidenceManifest({
             baseDir: ctx.directory,
             sessionId,
@@ -262,7 +270,7 @@ Ask the user which plan to work on. Present the options above and wait for their
             }
           } else {
             const manifestPath = `.opencode/evidence/${sessionId}/manifest.json`
-            const picked = selectBaseEvidenceEntries(manifest.entries)
+            const picked = selectBaseEvidenceEntries(manifest.entries, allowlist)
             const index = renderBaseEvidenceIndex({
               sessionId,
               planName: bridgePlanName,
@@ -280,17 +288,78 @@ Ask the user which plan to work on. Present the options above and wait for their
 
             const indexPath = join(notepadDir, "opencode-base-evidence.md")
             const indexRelPath = `.sisyphus/notepads/${bridgePlanName}/opencode-base-evidence.md`
-            const sectionTimestamp = new Date().toISOString()
-            const hasExisting = existsSync(indexPath)
-            const section = [
-              hasExisting ? "\n\n---\n\n" : "",
-              `## OpenCode base evidence bridge (${sectionTimestamp})\n\n`,
-              index.trimEnd(),
-              "\n",
-            ].join("")
 
-            appendFileSync(indexPath, section, "utf8")
-            contextInfo += `\n\n## OpenCode Base Evidence Index\n\nWrote: \`${indexRelPath}\``
+            const snapshotPath = join(notepadDir, "opencode-base-evidence.json")
+            const historyPath = join(notepadDir, "opencode-base-evidence.history.jsonl")
+
+            let shouldAppendMarkdown = true
+            let shouldAppendHistory = writeJson
+
+            if (writeJson) {
+              const snapshot = createBaseEvidenceSnapshot({
+                generatedAtUtc: new Date().toISOString(),
+                planName: bridgePlanName,
+                manifestPath,
+                allowlist,
+                entries: picked,
+              })
+
+              let previousHash: string | undefined
+              if (existsSync(snapshotPath)) {
+                try {
+                  const raw = readFileSync(snapshotPath, "utf8")
+                  const parsed = parseBaseEvidenceSnapshot(JSON.parse(raw))
+                  previousHash = parsed?.hash
+                } catch (error) {
+                  log(`[${HOOK_NAME}] Failed to read previous base evidence snapshot (ignored)`, {
+                    sessionID: input.sessionID,
+                    error: String(error),
+                  })
+                }
+              }
+
+              if (previousHash && previousHash === snapshot.hash) {
+                shouldAppendMarkdown = false
+                shouldAppendHistory = false
+                if (verbose) {
+                  contextInfo += `\n\n## OpenCode Base Evidence Index\n\nNo changes detected; skipped append.`
+                }
+              } else {
+                try {
+                  writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2) + "\n", "utf8")
+                } catch (error) {
+                  log(`[${HOOK_NAME}] Failed to write base evidence snapshot (ignored)`, {
+                    sessionID: input.sessionID,
+                    error: String(error),
+                  })
+                }
+
+                if (shouldAppendHistory) {
+                  try {
+                    appendFileSync(historyPath, JSON.stringify(snapshot) + "\n", "utf8")
+                  } catch (error) {
+                    log(`[${HOOK_NAME}] Failed to append base evidence history (ignored)`, {
+                      sessionID: input.sessionID,
+                      error: String(error),
+                    })
+                  }
+                }
+              }
+            }
+
+            if (shouldAppendMarkdown) {
+              const sectionTimestamp = new Date().toISOString()
+              const hasExisting = existsSync(indexPath)
+              const section = [
+                hasExisting ? "\n\n---\n\n" : "",
+                `## OpenCode base evidence bridge (${sectionTimestamp})\n\n`,
+                index.trimEnd(),
+                "\n",
+              ].join("")
+
+              appendFileSync(indexPath, section, "utf8")
+              contextInfo += `\n\n## OpenCode Base Evidence Index\n\nWrote: \`${indexRelPath}\``
+            }
           }
         } catch (error) {
           log(`[${HOOK_NAME}] Base evidence bridge failed (ignored)`, {
