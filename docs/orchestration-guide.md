@@ -207,6 +207,34 @@ You can control related features in `oh-my-opencode.json`.
 }
 ```
 
+### Experimental: Context Capsules (pointerization + truncated tool output)
+
+Oh-My-OpenCode sometimes writes large chunks of text to disk and injects a short `<context_pointer>` instead of pasting the full content into the chat context. This keeps prompts small while preserving a stable “paper trail” on disk.
+
+Configuration lives under `experimental.context_capsules`:
+
+```jsonc
+{
+  "experimental": {
+    "context_capsules": {
+      // Where capsule files are written (relative to project root)
+      // Default: ".opencode/context-capsules" (preserves existing behavior)
+      // Recommended: ".sisyphus/context-capsules" (avoids collisions when multiple plugins write capsules)
+      "dir": ".opencode/context-capsules",
+
+      // When tool output truncation happens, persist the full raw tool output
+      // and append a short <context_pointer> to the truncated output.
+      // Default: false (opt-in; default behavior unchanged)
+      "preserve_truncated_tool_output": false
+    }
+  }
+}
+```
+
+Notes:
+- `dir` controls where capsule files are written (e.g. `sha256.md`). Default is `.opencode/context-capsules` to preserve historical behavior. A good “future-proof” value is `.sisyphus/context-capsules` so multiple plugins can coexist under a shared namespace.
+- `preserve_truncated_tool_output` only applies when the `tool-output-truncator` hook actually truncates output. When enabled, Oh-My-OpenCode saves the full raw output to disk and appends a pointer containing a relative path + sha256. This is best-effort and will never block tool execution.
+
 ### Experimental: OpenCode Base Evidence Bridge (v0 + v2)
 
 **What this is:** When you run `/start-work` (and a plan is actually selected/resumed), Oh-My-OpenCode can optionally read the OpenCode base evidence manifest:
