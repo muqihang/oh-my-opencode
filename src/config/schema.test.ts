@@ -674,4 +674,30 @@ describe("OhMyOpenCodeConfigSchema - experimental.opencode_base_artifacts_bridge
       expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.enabled).toBe(true)
     }
   })
+
+  test("accepts inject_to_delegate_task and verbose flags", () => {
+    //#given
+    const input = {
+      experimental: {
+        opencode_base_artifacts_bridge: {
+          enabled: true,
+          inject_to_delegate_task: true,
+          verbose: true,
+        },
+      },
+    }
+
+    //#when
+    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    //#then
+    expect(parsed.success).toBe(true)
+    if (parsed.success) {
+      expect(parsed.data.experimental?.opencode_base_artifacts_bridge).toMatchObject({
+        enabled: true,
+        inject_to_delegate_task: true,
+        verbose: true,
+      })
+    }
+  })
 })

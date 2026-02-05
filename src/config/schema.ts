@@ -246,6 +246,8 @@ export const ExperimentalConfigSchema = z.object({
   dynamic_context_pruning: DynamicContextPruningConfigSchema.optional(),
   opencode_base_artifacts_bridge: z.object({
     enabled: z.boolean().default(false),
+    inject_to_delegate_task: z.boolean().default(false),
+    verbose: z.boolean().default(false),
   }).optional(),
   /** Compatibility warnings for OpenCode base single-session orchestrator */
   opencode_orchestrator_compat: z.object({
