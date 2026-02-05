@@ -141,3 +141,55 @@ Oh-My 配置新增：
 
 3) **是否要把索引也做成 pointer（.opencode/context-capsules）？**  
 v0 不需要：索引本身很短；后续如果索引变长，可复用 pointerize。
+
+---
+
+## 6) 后续增强路线图（V1 / V2，先记下来避免忘）
+
+> 目标：在 **不破坏 Oh-My 原有工作流** 的前提下，让“基座产物”不仅能被看到，还能被 **子会话自动优先复用**，进一步省钱、省时间、让证据链更稳定。
+
+### V1：子会话自动“先读索引再动手”（Working Set 注入）
+
+**一句话**：当 `delegate_task` 派出子会话时，自动在 prompt 最前面加一段短指令：
+1) 先读 `.sisyphus/notepads/<plan-name>/opencode-base-evidence.md`  
+2) 优先复用里面的 pointers/产物路径  
+3) 只有确实不够时才再跑新的检索/扫描
+
+**实现形态（建议，仍然 gated，默认关闭）**：
+- 在 `atlas` hook 的 `tool.execute.before` 里，检测 `tool === "delegate_task"`：
+  - 如果 boulder 有 active plan 且存在索引文件，则把一段“先读索引”指令 prepend 到 `output.args.prompt`
+- 这种方式的好处是：
+  - **不改** Prometheus / `/start-work` / boulder 的机制
+  - 只影响 `delegate_task` 的 prompt（且可用开关控制）
+  - 子会话如果不需要，也可以忽略（软约束，风险低）
+
+**需要新增的开关（示例）**：
+```jsonc
+{
+  "experimental": {
+    "opencode_base_artifacts_bridge": {
+      "enabled": true,
+      "inject_to_delegate_task": true
+    }
+  }
+}
+```
+
+**测试（必须有）**：
+- atlas hook 的 `tool.execute.before`：当索引文件存在时，断言 `delegate_task` prompt 被 prepend；不存在时不改 prompt。
+
+### V2：把索引升级为“机器可读工作集”（更稳定、更自动）
+
+**一句话**：在 V1 的基础上，让索引不只是 Markdown，而是同时产出一个稳定的 JSON（机器可读），并且可选做 pointerize（避免超长上下文）。
+
+**建议输出**：
+- `.sisyphus/notepads/<plan-name>/opencode-base-evidence.json`
+  - 只包含 allowlist 后的 `{ kind, path, sha256 }[]`（稳定字段，容易做合约测试）
+- Markdown 继续保留（给人看）
+
+**可选增强**：
+- 当索引过长时，复用 Oh-My 现有 `pointerize()` 机制，把“注入到 prompt 的文本”变成 `<context_pointer>`（不占上下文）。
+
+**测试（必须有）**：
+- JSON shape 合约测试（最小字段 + 稳定排序）
+- 当 entries 很多时，验证 pointerize 生效（只注入指针而非全文）

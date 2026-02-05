@@ -226,3 +226,21 @@ Run:
 Expected:
 - exit code 0
 - `git status --porcelain` empty
+
+---
+
+## Follow-ups（V1 / V2，执行完 V0 立刻推进）
+
+> 这两项 **不包含在本次 V0 的实现里**，但我们把它们写在这里，确保 V0 合并后不丢节奏。
+
+### V1：子会话自动优先复用索引（delegate_task 注入）
+- 在 `atlas` hook 的 `tool.execute.before` 针对 `delegate_task`：
+  - 如果 boulder 存在且索引文件存在，则 prepend “先读 `.sisyphus/notepads/<plan>/opencode-base-evidence.md` 再动手”的短指令
+- 新增 gated 配置：`experimental.opencode_base_artifacts_bridge.inject_to_delegate_task`（默认 false）
+- 测试：atlas hook 单测（有索引/无索引 两种分支）
+
+### V2：机器可读索引 + pointerize（更稳）
+- 在写入 Markdown 的同时，写入 JSON：
+  - `.sisyphus/notepads/<plan>/opencode-base-evidence.json`
+- 可选：当索引过长时复用 `pointerize()`，注入 `<context_pointer>` 而不是全文
+- 测试：JSON 合约测试 + pointerize 行为测试
