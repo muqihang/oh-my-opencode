@@ -233,14 +233,56 @@ Expected:
 
 > 这两项 **不包含在本次 V0 的实现里**，但我们把它们写在这里，确保 V0 合并后不丢节奏。
 
-### V1：子会话自动优先复用索引（delegate_task 注入）
-- 在 `atlas` hook 的 `tool.execute.before` 针对 `delegate_task`：
-  - 如果 boulder 存在且索引文件存在，则 prepend “先读 `.sisyphus/notepads/<plan>/opencode-base-evidence.md` 再动手”的短指令
-- 新增 gated 配置：`experimental.opencode_base_artifacts_bridge.inject_to_delegate_task`（默认 false）
-- 测试：atlas hook 单测（有索引/无索引 两种分支）
+### V1 前置（必须）：先修 delegate_task 注入机制（prompt 组合器 / composer）
 
-### V2：机器可读索引 + pointerize（更稳）
-- 在写入 Markdown 的同时，写入 JSON：
-  - `.sisyphus/notepads/<plan>/opencode-base-evidence.json`
-- 可选：当索引过长时复用 `pointerize()`，注入 `<context_pointer>` 而不是全文
-- 测试：JSON 合约测试 + pointerize 行为测试
+> 用白话说：现在有多个 hook 都想往 `delegate_task` prompt 前面塞提示，但用同一个“全局标记”判断是否注入过，导致谁先跑谁赢。  
+> V1 要再加“先读工作集索引”，会把这种不确定性放大，所以必须先把注入机制修成**确定、可预测、可测试**。
+
+- 在 `atlas` hook 内实现一个小的“prompt 组合器（composer）”：
+  - 所有对 `delegate_task` 的 prepend 都集中在一个地方按固定顺序拼接（例如：单任务约束 / notepad 指令 / base evidence 指令）。
+  - 每一段提示用自己的 marker 做幂等（idempotent），不要再用 `SYSTEM_DIRECTIVE_PREFIX` 这种全局粗判断来决定“注入过没注入过”。
+- 测试至少覆盖 3 件事（否则别进入 V1）：
+  1) 有索引 / 没索引时行为正确  
+  2) 同一任务重复 `delegate_task` 不会重复塞一堆提示（幂等）  
+  3) 原 prompt 不会被吞掉/覆盖（只做 prepend）
+
+### V1：子会话自动优先复用索引（Working Set 注入）
+
+- 在 `atlas` hook 的 `tool.execute.before` 针对 `delegate_task`：
+  - 当 boulder 存在且 `.sisyphus/notepads/<plan>/opencode-base-evidence.md` 存在时，prepend 一句非常短的硬指令：
+    - “先读这个 notepad 索引，再决定要不要检索/扫描；优先复用索引里的路径/指针。”
+- 新增 gated 配置：`experimental.opencode_base_artifacts_bridge.inject_to_delegate_task`（默认 false）
+- 防御性增强（建议并入 V1，一次性把“悄悄失效”的风险降到最低）：
+  - 版本门控：只支持 `evidence-manifest/1.0`；遇到其它 `specVersion` 不阻断，但必须 log（可选输出一条简短提示，见 verbose 开关）
+  - 可观测性：增加可选开关（例如 `experimental.opencode_base_artifacts_bridge.verbose`），开启后在 `/start-work` 输出里附一句失败原因摘要（默认关闭，保持“不阻断只 log”）
+  - entry path 最小安全校验：相对路径、禁止 `..`，并建议限制必须以 `.opencode/` 开头（不合法则跳过并 log）
+- 测试：
+  - atlas hook 单测（有索引 / 无索引 / 重复调用幂等）
+  -（可选）specVersion 不支持时走降级分支（不阻断）
+
+### V2：机器可读工作集（JSON 最新态 + 历史审计）+ 变化检测 + allowlist 配置化
+
+- 在写入 Markdown 的同时，写入两份 JSON（更产品化、更好解释）：
+  - `.sisyphus/notepads/<plan>/opencode-base-evidence.json`：保存“最新合并态”（覆盖写，机器读取最方便）
+  - `.sisyphus/notepads/<plan>/opencode-base-evidence.history.jsonl`：保存“历史审计流”（append-only，每次生成追加一行快照事件）
+- JSON 合约字段建议写死并测出来（避免未来每个人各搞一套）：
+  - `schemaVersion`（你们自己的 schema version，区分于基座 `specVersion`）
+  - `generatedAtUtc`
+  - `source`（至少包含 `manifestPath` / `specVersion`，可选 `packId` / 基座 `generatedAtUtc`）
+  - `planName`
+  - `allowlist`（固化当次 allowlist）
+  - `entries`（稳定排序+去重的 `{ kind, path, sha256 }[]`）
+- 变化检测（强烈建议纳入 DoD）：picked entries 与上次完全一致时，Markdown 不要每次追加一大段（最多追加一句“无变化 + 时间”）
+- allowlist 配置化：
+  - allowlist 有默认值，但允许通过配置扩展/收敛（避免每次新增 kind 都要改代码发版）
+- pointerize（后置增强，非 V2 必做）：
+  - 如果未来确实需要 pointerize（必须注入 prompt 且内容很长），**桥接能力坚持不写 `.opencode/**`**：capsule 写到 `.sisyphus/**`（例如 `.sisyphus/notepads/<plan>/capsules/`）
+  - 现实上对子会话通常优先“去 Read 索引文件”，pointerize 优先级可后置，但路线要写清楚避免遗忘
+- 测试：
+  - JSON 合约测试（字段/排序/去重）
+  - history.jsonl 追加行为测试（不覆盖）
+  - 变化检测测试（无变化不追加大段）
+
+### 额外定案：信息源一致（避免误判/扯皮）
+
+- 本方案（含 V1/V2）基于 `opencode-zh-build/opencode_src` 这一份基座实现与协议（包含 `evidence-manifest/1.0` 的格式定义与落盘 writer）。

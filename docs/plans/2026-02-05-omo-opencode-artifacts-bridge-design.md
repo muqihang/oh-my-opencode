@@ -144,13 +144,33 @@ Oh-My 配置新增：
 理由：这是“用户显式开启的能力”，开启后应该立即告诉用户/Atlas 索引文件在哪；同时它只发生在 `/start-work`（低频），不会污染每次工具调用的上下文。
 
 3) **是否要把索引也做成 pointer（.opencode/context-capsules）？**  
-v0 不需要：索引本身很短；后续如果索引变长，可复用 pointerize。
+v0 不需要：索引本身很短；优先让子会话 `Read` notepad 索引文件，而不是把大段内容塞进 prompt。  
+如果未来确实需要 pointerize（例如必须注入 prompt，但索引/工作集过长），**桥接能力必须坚持不写 `.opencode/**`**：指针/胶囊文件建议写到 `.sisyphus/**`（例如 `.sisyphus/notepads/<plan>/capsules/`），避免“插件往基座地盘落文件”造成边界混乱。
 
 ---
 
 ## 6) 后续增强路线图（V1 / V2，先记下来避免忘）
 
 > 目标：在 **不破坏 Oh-My 原有工作流** 的前提下，让“基座产物”不仅能被看到，还能被 **子会话自动优先复用**，进一步省钱、省时间、让证据链更稳定。
+
+### 6.1 先对齐一个“现实契约”（避免 V1/V2 做得很漂亮但悄悄失效）
+
+- `.opencode/evidence/<sessionId>/manifest.json` 不是“纯口头约定”，它是 OpenCode 基座 evidence 系统的一部分（有 `specVersion`）。  
+- 但从插件角度，我们仍然要当它是 **外部输入**：可能不存在、可能旧版本、可能字段增减。  
+- 所以 V1/V2 的底线仍然是：**best-effort 解析 + 失败降级 + 不阻断 Oh-My 主流程**。
+
+**定案（版本门控 + 可观测性）**：
+- manifest 的版本门控：**只支持 `evidence-manifest/1.0`**（读取到其它 `specVersion` → 不阻断 `/start-work`，但必须留下清晰日志；可选输出一条简短提示，见下方 verbose 开关）。  
+- 失败可观测性：默认失败只 log（不污染输出）；但允许加一个可选开关（例如 `experimental.opencode_base_artifacts_bridge.verbose`）：
+  - 默认关闭：保持 V0 的“失败不阻断、只 log”
+  - 开启后：在 `/start-work` 输出里追加一句“桥接失败原因摘要”，避免“开了开关但啥也没发生”的困惑（仍不阻断主流程）。
+
+**定案（安全校验）**：
+- manifest entry 的 `path` 做最小安全校验（插件侧也要防御）：必须是相对路径、禁止 `..`，并建议限制必须以 `.opencode/` 开头（否则跳过该 entry 并 log）。  
+- 目标是防止“清单里出现跑到项目外面去的路径”，以及减少未来协议字段变化带来的安全/可用性风险。
+
+**团队规则（避免信息源不一致导致误判）**：
+- 本方案基于 `opencode-zh-build/opencode_src` 这一份基座实现与协议（包含 `evidence-manifest/1.0` 的格式定义与落盘 writer）。
 
 ### V1：子会话自动“先读索引再动手”（Working Set 注入）
 
@@ -160,12 +180,14 @@ v0 不需要：索引本身很短；后续如果索引变长，可复用 pointer
 3) 只有确实不够时才再跑新的检索/扫描
 
 **实现形态（建议，仍然 gated，默认关闭）**：
-- 在 `atlas` hook 的 `tool.execute.before` 里，检测 `tool === "delegate_task"`：
-  - 如果 boulder 有 active plan 且存在索引文件，则把一段“先读索引”指令 prepend 到 `output.args.prompt`
-- 这种方式的好处是：
-  - **不改** Prometheus / `/start-work` / boulder 的机制
-  - 只影响 `delegate_task` 的 prompt（且可用开关控制）
-  - 子会话如果不需要，也可以忽略（软约束，风险低）
+- 不再“新增一个注入点就再加一个粗判断”。V1 先把 `delegate_task` 的 prompt 注入做得 **确定、可预测、可测试**。
+- 做法（推荐落地形态）：
+  - 在 `atlas` hook 里实现一个小的“prompt 组合器（composer）”：按固定顺序拼接多段 prepend（单任务约束 / notepad 指令 / base evidence 指令）。
+  - 每一段都用自己的 marker 做幂等（idempotent），不要再用 `SYSTEM_DIRECTIVE_PREFIX` 这种全局粗判断来决定“注入过没注入过”。
+
+这样做的原因（很现实）：
+- 目前项目里已经有多个 hook 会 prepend `delegate_task` prompt（例如 Atlas 的单任务约束、Sisyphus Junior 的 notepad 指令）。
+- 如果继续靠“全局前缀”做粗判断，会出现“谁先跑谁赢”的顺序依赖，后续加第三段（base evidence）会更难稳定。
 
 **需要新增的开关（示例）**：
 ```jsonc
@@ -180,20 +202,39 @@ v0 不需要：索引本身很短；后续如果索引变长，可复用 pointer
 ```
 
 **测试（必须有）**：
-- atlas hook 的 `tool.execute.before`：当索引文件存在时，断言 `delegate_task` prompt 被 prepend；不存在时不改 prompt。
+- atlas hook 的 `tool.execute.before`：
+  - 当索引文件存在时，断言 `delegate_task` prompt 被 prepend；
+  - 不存在时不改 prompt；
+  - **重复调用不重复注入**（幂等测试）。
 
 ### V2：把索引升级为“机器可读工作集”（更稳定、更自动）
 
-**一句话**：在 V1 的基础上，让索引不只是 Markdown，而是同时产出一个稳定的 JSON（机器可读），并且可选做 pointerize（避免超长上下文）。
+**一句话**：在 V1 的基础上，让索引不只是 Markdown，而是同时产出一个稳定的 JSON（机器可读）。  
+pointerize 属于“最后不得已才用”的增强项：优先让子会话去 `Read` 索引文件，而不是把大段内容塞进 prompt。
 
 **建议输出**：
 - `.sisyphus/notepads/<plan-name>/opencode-base-evidence.json`
-  - 只包含 allowlist 后的 `{ kind, path, sha256 }[]`（稳定字段，容易做合约测试）
+  - 作为“最新状态快照”（便于机器读取、覆盖写）
+- `.sisyphus/notepads/<plan-name>/opencode-base-evidence.history.jsonl`
+  - 作为“历史审计流”（append-only，每次生成追加一行快照事件）
 - Markdown 继续保留（给人看）
 
+**建议 JSON 合约字段（作为 V2 文档与测试的定案）**：
+- `schemaVersion`：你们自己的 schema 版本（区分于基座 `specVersion`）
+- `generatedAtUtc`：本次生成时间
+- `source`：至少包含 `manifestPath`、`specVersion`，可选包含 `packId`、基座 `generatedAtUtc`
+- `planName`
+- `allowlist`：把当时使用的 allowlist 固化进去（否则无法解释“为什么没收录某 kind”）
+- `entries`：稳定排序 + 去重后的 `{ kind, path, sha256 }[]`
+
+**行为优化（建议纳入 V2 DoD）**：
+- 变化检测：如果本次 picked entries 与上次完全一致，Markdown 不要每次追加一大段（最多追加一句“无变化 + 时间”）。
+
 **可选增强**：
-- 当索引过长时，复用 Oh-My 现有 `pointerize()` 机制，把“注入到 prompt 的文本”变成 `<context_pointer>`（不占上下文）。
+- 当确实需要把内容“注入到 prompt”但又太长时，再做 pointerize：
+  - **建议写到 `.sisyphus/...` 下**（例如 `.sisyphus/notepads/<plan>/capsules/`），不要写到 `.opencode/`，避免边界混乱。
 
 **测试（必须有）**：
-- JSON shape 合约测试（最小字段 + 稳定排序）
-- 当 entries 很多时，验证 pointerize 生效（只注入指针而非全文）
+- JSON shape 合约测试（包含 schemaVersion/generatedAtUtc/source/allowlist/entries，稳定排序+去重）
+- history.jsonl 追加行为测试（不覆盖）
+-（可选）当 entries 很多时，验证 pointerize 生效（只注入指针而非全文）
