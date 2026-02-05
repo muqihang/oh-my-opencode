@@ -2,6 +2,7 @@ import type { ContextCollector } from "./collector"
 import type { Message, Part } from "@opencode-ai/sdk"
 import { log } from "../../shared"
 import { pointerize } from "./pointerize"
+import type { ExperimentalConfig } from "../../config/schema"
 
 interface OutputPart {
   type: string
@@ -81,8 +82,13 @@ type MessagesTransformHook = {
   ) => Promise<void>
 }
 
+interface ContextInjectorMessagesTransformHookOptions {
+  experimental?: ExperimentalConfig
+}
+
 export function createContextInjectorMessagesTransformHook(
-  collector: ContextCollector
+  collector: ContextCollector,
+  options?: ContextInjectorMessagesTransformHookOptions
 ): MessagesTransformHook {
   return {
     "experimental.chat.messages.transform": async (_input, output) => {
@@ -142,6 +148,7 @@ export function createContextInjectorMessagesTransformHook(
         text: pending.merged,
         maxChars: DEFAULT_CONTEXT_BUDGET_CHARS,
         baseDir,
+        dir: options?.experimental?.context_capsules?.dir,
       })
 
       const textPartIndex = lastUserMessage.parts.findIndex(
