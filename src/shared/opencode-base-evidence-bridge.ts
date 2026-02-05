@@ -9,8 +9,9 @@ const BaseEvidenceEntrySchema = z.object({
 })
 
 const BaseEvidenceManifestSchema = z.object({
+  specVersion: z.literal("evidence-manifest/1.0"),
   entries: z.array(BaseEvidenceEntrySchema),
-})
+}).passthrough()
 
 export type BaseEvidenceEntry = z.infer<typeof BaseEvidenceEntrySchema>
 export type BaseEvidenceManifest = z.infer<typeof BaseEvidenceManifestSchema>
@@ -47,6 +48,17 @@ const ALLOWLISTED_KINDS = [
   "retrieval-hits",
 ] as const
 
+function isSafeEvidencePath(path: string): boolean {
+  if (!path) return false
+
+  const normalized = path.replace(/\\/g, "/")
+  if (normalized.startsWith("/")) return false
+  if (/^[A-Za-z]:\//.test(normalized)) return false
+  if (!normalized.startsWith(".opencode/")) return false
+
+  return !normalized.split("/").some((part) => part === "..")
+}
+
 export function selectBaseEvidenceEntries(
   entries: Array<BaseEvidenceEntry>,
 ): Array<BaseEvidenceEntry> {
@@ -54,6 +66,7 @@ export function selectBaseEvidenceEntries(
     .filter((entry) =>
       (ALLOWLISTED_KINDS as readonly string[]).includes(entry.kind),
     )
+    .filter((entry) => isSafeEvidencePath(entry.path))
     .slice()
     .sort((a, b) => a.kind.localeCompare(b.kind) || a.path.localeCompare(b.path))
 }
@@ -93,4 +106,3 @@ export function renderBaseEvidenceIndex(input: RenderBaseEvidenceIndexInput): st
   lines.push("")
   return lines.join("\n")
 }
-

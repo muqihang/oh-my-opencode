@@ -247,6 +247,7 @@ Ask the user which plan to work on. Present the options above and wait for their
         bridgePlanName
       ) {
         try {
+          const verbose = options?.experimental?.opencode_base_artifacts_bridge?.verbose === true
           const manifest = readBaseEvidenceManifest({
             baseDir: ctx.directory,
             sessionId,
@@ -256,6 +257,9 @@ Ask the user which plan to work on. Present the options above and wait for their
             log(`[${HOOK_NAME}] Base evidence manifest missing or invalid`, {
               sessionID: input.sessionID,
             })
+            if (verbose) {
+              contextInfo += `\n\n## OpenCode Base Evidence Index\n\nSkipped: \`.opencode/evidence/${sessionId}/manifest.json\` missing or unsupported.`
+            }
           } else {
             const manifestPath = `.opencode/evidence/${sessionId}/manifest.json`
             const picked = selectBaseEvidenceEntries(manifest.entries)

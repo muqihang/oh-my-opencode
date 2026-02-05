@@ -390,6 +390,7 @@ describe("start-work hook", () => {
       writeFileSync(
         join(manifestDir, "manifest.json"),
         JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
           entries: [
             {
               kind: "orchestrator-plan",
@@ -445,6 +446,7 @@ describe("start-work hook", () => {
       writeFileSync(
         join(manifestDir, "manifest.json"),
         JSON.stringify({
+          specVersion: "evidence-manifest/1.0",
           entries: [
             {
               kind: "orchestrator-plan",
@@ -472,6 +474,30 @@ describe("start-work hook", () => {
       expect(content).toContain("OLD CONTENT")
       expect(content).toContain("orchestrator-plan")
       expect(content).toMatch(/\d{4}-\d{2}-\d{2}T/)
+    })
+
+    test("verbose mode surfaces bridge skip reason when manifest is missing", async () => {
+      //#given - a single incomplete plan but no base evidence manifest
+      const sessionId = "ses_123"
+
+      const plansDir = join(TEST_DIR, ".sisyphus", "plans")
+      mkdirSync(plansDir, { recursive: true })
+      writeFileSync(join(plansDir, "demo.md"), "# Demo\n- [ ] Task 1\n", "utf8")
+
+      const hook = createStartWorkHook(createMockPluginInput(), {
+        experimental: { opencode_base_artifacts_bridge: { enabled: true, verbose: true } },
+      })
+
+      const output = {
+        parts: [{ type: "text", text: "<session-context></session-context>" }],
+      }
+
+      //#when
+      await hook["chat.message"]({ sessionID: sessionId }, output)
+
+      //#then
+      expect(output.parts[0].text).toContain("OpenCode Base Evidence Index")
+      expect(output.parts[0].text).toContain("Skipped")
     })
   })
 
