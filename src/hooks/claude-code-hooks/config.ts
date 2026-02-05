@@ -3,6 +3,12 @@ import { existsSync } from "fs"
 import { getClaudeConfigDir } from "../../shared"
 import type { ClaudeHooksConfig, HookMatcher, HookCommand } from "./types"
 
+export interface LoadClaudeHooksConfigOptions {
+  directory?: string
+  customSettingsPath?: string
+  claudeConfigDir?: string
+}
+
 interface RawHookMatcher {
   matcher?: string
   pattern?: string
@@ -43,14 +49,16 @@ function normalizeHooksConfig(raw: RawClaudeHooksConfig): ClaudeHooksConfig {
   return result
 }
 
-export function getClaudeSettingsPaths(customPath?: string): string[] {
-  const claudeConfigDir = getClaudeConfigDir()
+export function getClaudeSettingsPaths(options: LoadClaudeHooksConfigOptions = {}): string[] {
+  const directory = options.directory ?? process.cwd()
+  const claudeConfigDir = options.claudeConfigDir ?? getClaudeConfigDir()
   const paths = [
     join(claudeConfigDir, "settings.json"),
-    join(process.cwd(), ".claude", "settings.json"),
-    join(process.cwd(), ".claude", "settings.local.json"),
+    join(directory, ".claude", "settings.json"),
+    join(directory, ".claude", "settings.local.json"),
   ]
 
+  const customPath = options.customSettingsPath
   if (customPath && existsSync(customPath)) {
     paths.unshift(customPath)
   }
@@ -79,9 +87,9 @@ function mergeHooksConfig(
 }
 
 export async function loadClaudeHooksConfig(
-  customSettingsPath?: string
+  options: LoadClaudeHooksConfigOptions = {}
 ): Promise<ClaudeHooksConfig | null> {
-  const paths = getClaudeSettingsPaths(customSettingsPath)
+  const paths = getClaudeSettingsPaths(options)
   let mergedConfig: ClaudeHooksConfig = {}
 
   for (const settingsPath of paths) {

@@ -47,7 +47,7 @@ export function createClaudeCodeHooksHook(
         return
       }
 
-      const claudeConfig = await loadClaudeHooksConfig()
+      const claudeConfig = await loadClaudeHooksConfig({ directory: ctx.directory })
       const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const preCompactCtx: PreCompactContext = {
@@ -86,7 +86,7 @@ export function createClaudeCodeHooksHook(
         return
       }
 
-      const claudeConfig = await loadClaudeHooksConfig()
+      const claudeConfig = await loadClaudeHooksConfig({ directory: ctx.directory })
       const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const textParts = output.parts.filter((p) => p.type === "text" && p.text)
@@ -195,7 +195,7 @@ export function createClaudeCodeHooksHook(
         log("todowrite: parsed todos string to array", { sessionID: input.sessionID })
       }
 
-      const claudeConfig = await loadClaudeHooksConfig()
+      const claudeConfig = await loadClaudeHooksConfig({ directory: ctx.directory })
       const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       recordToolUse(input.sessionID, input.tool, output.args as Record<string, unknown>)
@@ -242,7 +242,7 @@ export function createClaudeCodeHooksHook(
         return
       }
 
-      const claudeConfig = await loadClaudeHooksConfig()
+      const claudeConfig = await loadClaudeHooksConfig({ directory: ctx.directory })
       const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
       const cachedInput = getToolInput(input.sessionID, input.tool, input.callID) || {}
@@ -348,7 +348,7 @@ export function createClaudeCodeHooksHook(
 
         if (!sessionID) return
 
-        const claudeConfig = await loadClaudeHooksConfig()
+        const claudeConfig = await loadClaudeHooksConfig({ directory: ctx.directory })
         const extendedConfig = await loadPluginExtendedConfig({ directory: ctx.directory })
 
         const errorStateBefore = sessionErrorState.get(sessionID)
