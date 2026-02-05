@@ -361,8 +361,8 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   const [userSkills, globalSkills, projectSkills, opencodeProjectSkills] = await Promise.all([
     includeClaudeSkills ? discoverUserClaudeSkills() : Promise.resolve([]),
     discoverOpencodeGlobalSkills(),
-    includeClaudeSkills ? discoverProjectClaudeSkills() : Promise.resolve([]),
-    discoverOpencodeProjectSkills(),
+    includeClaudeSkills ? discoverProjectClaudeSkills(ctx.directory) : Promise.resolve([]),
+    discoverOpencodeProjectSkills(ctx.directory),
   ]);
   const mergedSkills = mergeSkills(
     builtinSkills,
@@ -386,7 +386,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
     getSessionID: getSessionIDForMcp,
   });
 
-  const commands = discoverCommandsSync();
+  const commands = discoverCommandsSync(ctx.directory);
   const slashcommandTool = createSlashcommandTool({
     commands,
     skills: mergedSkills,
