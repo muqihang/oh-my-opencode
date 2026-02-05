@@ -242,6 +242,19 @@ export const ExperimentalConfigSchema = z.object({
   auto_resume: z.boolean().optional(),
   /** Truncate all tool outputs, not just whitelisted tools (default: false). Tool output truncator is enabled by default - disable via disabled_hooks. */
   truncate_all_tool_outputs: z.boolean().optional(),
+  /**
+   * Context capsules configuration (opt-in).
+   *
+   * Default behavior remains unchanged:
+   * - Capsules are written under `.opencode/context-capsules`
+   * - Truncated tool output is NOT preserved unless explicitly enabled
+   */
+  context_capsules: z.object({
+    /** Directory (relative to project root) for writing context capsules */
+    dir: z.string().default(".opencode/context-capsules"),
+    /** When a tool output is truncated, persist the full raw output and append a short pointer (default: false) */
+    preserve_truncated_tool_output: z.boolean().default(false),
+  }).optional(),
   /** Dynamic context pruning configuration */
   dynamic_context_pruning: DynamicContextPruningConfigSchema.optional(),
   opencode_base_artifacts_bridge: z.object({
