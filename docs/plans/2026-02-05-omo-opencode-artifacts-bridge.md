@@ -158,6 +158,12 @@ Expected: PASS
 - 断言：
   - `.sisyphus/notepads/demo/opencode-base-evidence.md` 存在
   - 内容包含 `orchestrator-plan` / `sha256`
+  - `/start-work` 输出文本里包含索引路径（例如 `opencode-base-evidence.md`）
+
+再加一个用例（覆盖 append 行为）：
+- 预置：先写入一段旧内容到 `.sisyphus/notepads/demo/opencode-base-evidence.md`
+- 触发：再次 `/start-work`
+- 断言：文件仍包含旧内容 + 新段落（不覆盖）
 
 **Step 2: 运行测试确认失败（RED evidence）**
 
@@ -176,6 +182,8 @@ Expected: FAIL（文件未生成）
      - 读取 `.opencode/evidence/<sessionId>/manifest.json`
      - 渲染 markdown
      - 写入 `.sisyphus/notepads/<plan-name>/opencode-base-evidence.md`（目录不存在就 mkdir）
+       - **如果文件已存在：追加（append）一个新段落**，带 timestamp（避免覆盖掉人工记录/旧索引）
+     - 把索引文件路径回写到 `/start-work` 的输出文本里（让用户/Atlas 立刻看到在哪里）
    - 所有桥接失败都 catch 并 log（不得阻断）
 
 **Step 4: 运行测试确认通过（GREEN evidence）**
@@ -218,4 +226,3 @@ Run:
 Expected:
 - exit code 0
 - `git status --porcelain` empty
-
