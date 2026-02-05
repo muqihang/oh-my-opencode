@@ -96,7 +96,16 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
     !hasWarnedOrchestratorCompat &&
     pluginConfig.experimental?.opencode_orchestrator_compat?.enabled === true
   ) {
-    const warning = getOrchestratorForkStrategyCompatWarning(process.env)
+    const baseConfig = await (async () => {
+      try {
+        const response = await ctx.client.config.get()
+        return (response as { data?: unknown })?.data
+      } catch {
+        return undefined
+      }
+    })()
+
+    const warning = getOrchestratorForkStrategyCompatWarning(process.env, baseConfig)
     if (warning.shouldWarn) {
       hasWarnedOrchestratorCompat = true
       console.warn(warning.message)
