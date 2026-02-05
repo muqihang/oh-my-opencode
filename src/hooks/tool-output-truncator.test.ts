@@ -1,4 +1,8 @@
 import { describe, it, expect, beforeEach, mock, spyOn } from "bun:test"
+import { createHash } from "node:crypto"
+import { existsSync, mkdtempSync, readFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { createToolOutputTruncatorHook } from "./tool-output-truncator"
 import * as dynamicTruncator from "../shared/dynamic-truncator"
 
@@ -162,6 +166,83 @@ describe("createToolOutputTruncatorHook", () => {
 
           expect(truncateMock).toHaveBeenCalled()
         })
+      })
+    })
+
+    describe("#given preserve_truncated_tool_output enabled", () => {
+      it("#then writes raw output to disk and appends a short context_pointer", async () => {
+        const truncateMock = mock(async () => ({
+          result: "TRUNCATED",
+          truncated: true,
+        }))
+        truncateSpy.mockReturnValue({
+          truncate: truncateMock,
+          getUsage: mock(async () => null),
+          truncateSync: mock(() => ({ result: "", truncated: false })),
+        })
+
+        const tempDir = mkdtempSync(join(tmpdir(), "omo-truncator-"))
+        hook = createToolOutputTruncatorHook({ directory: tempDir } as never, {
+          experimental: {
+            context_capsules: {
+              dir: ".sisyphus/context-capsules",
+              preserve_truncated_tool_output: true,
+            },
+          },
+        })
+
+        const raw = "RAW OUTPUT (FULL)"
+        const input = createInput("grep")
+        const output = createOutput(raw)
+
+        await hook["tool.execute.after"](input, output)
+
+        const sha256 = createHash("sha256").update(raw, "utf8").digest("hex")
+        const expectedPath = join(tempDir, ".sisyphus", "context-capsules", `${sha256}.md`)
+
+        expect(existsSync(expectedPath)).toBe(true)
+        expect(readFileSync(expectedPath, "utf8")).toBe(raw)
+
+        expect(output.output).toContain("<context_pointer>")
+        expect(output.output).toContain(`path: .sisyphus/context-capsules/${sha256}.md`)
+        expect(output.output).toContain(`sha256: ${sha256}`)
+      })
+    })
+
+    describe("#given preserve_truncated_tool_output disabled (default)", () => {
+      it("#then does not write file or append pointer (existing behavior)", async () => {
+        const truncateMock = mock(async () => ({
+          result: "TRUNCATED",
+          truncated: true,
+        }))
+        truncateSpy.mockReturnValue({
+          truncate: truncateMock,
+          getUsage: mock(async () => null),
+          truncateSync: mock(() => ({ result: "", truncated: false })),
+        })
+
+        const tempDir = mkdtempSync(join(tmpdir(), "omo-truncator-"))
+        hook = createToolOutputTruncatorHook({ directory: tempDir } as never, {
+          experimental: {
+            context_capsules: {
+              dir: ".sisyphus/context-capsules",
+              preserve_truncated_tool_output: false,
+            },
+          },
+        })
+
+        const raw = "RAW OUTPUT (FULL)"
+        const input = createInput("grep")
+        const output = createOutput(raw)
+
+        await hook["tool.execute.after"](input, output)
+
+        const sha256 = createHash("sha256").update(raw, "utf8").digest("hex")
+        const expectedPath = join(tempDir, ".sisyphus", "context-capsules", `${sha256}.md`)
+
+        expect(existsSync(expectedPath)).toBe(false)
+        expect(output.output).toBe("TRUNCATED")
+        expect(output.output).not.toContain("<context_pointer>")
       })
     })
   })
