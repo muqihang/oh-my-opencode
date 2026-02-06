@@ -788,3 +788,56 @@ describe("OhMyOpenCodeConfigSchema - experimental.context_capsules", () => {
     }
   })
 })
+
+describe("OhMyOpenCodeConfigSchema - experimental.atlas_journal", () => {
+  test("accepts experimental atlas journal config override", () => {
+    // #given
+    const input = {
+      experimental: {
+        atlas_journal: {
+          enabled: true,
+          short_reminder: false,
+          path_mode: "global",
+          verbose: true,
+        },
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental?.atlas_journal).toEqual({
+        enabled: true,
+        short_reminder: false,
+        path_mode: "global",
+        verbose: true,
+      })
+    }
+  })
+
+  test("defaults atlas journal fields when object provided", () => {
+    // #given
+    const input = {
+      experimental: {
+        atlas_journal: {},
+      },
+    }
+
+    // #when
+    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+
+    // #then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.experimental?.atlas_journal).toEqual({
+        enabled: false,
+        short_reminder: true,
+        path_mode: "plan-notepad",
+        verbose: false,
+      })
+    }
+  })
+})
