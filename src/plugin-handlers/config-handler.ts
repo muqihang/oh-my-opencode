@@ -183,9 +183,9 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       discoveredOpencodeProjectSkills,
     ] = await Promise.all([
       includeClaudeSkillsForAwareness ? impl.discoverUserClaudeSkills() : Promise.resolve([]),
-      includeClaudeSkillsForAwareness ? impl.discoverProjectClaudeSkills() : Promise.resolve([]),
+      includeClaudeSkillsForAwareness ? impl.discoverProjectClaudeSkills(ctx.directory) : Promise.resolve([]),
       impl.discoverOpencodeGlobalSkills(),
-      impl.discoverOpencodeProjectSkills(),
+      impl.discoverOpencodeProjectSkills(ctx.directory),
     ]);
 
     const allDiscoveredSkills = [
@@ -219,7 +219,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       ? impl.loadUserAgents()
       : {};
     const projectAgents = (pluginConfig.claude_code?.agents ?? true)
-      ? impl.loadProjectAgents()
+      ? impl.loadProjectAgents(ctx.directory)
       : {};
 
     // Plugin agents: Apply permission migration for compatibility
@@ -476,13 +476,13 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       opencodeProjectSkills,
     ] = await Promise.all([
       includeClaudeCommands ? impl.loadUserCommands() : Promise.resolve({}),
-      includeClaudeCommands ? impl.loadProjectCommands() : Promise.resolve({}),
+      includeClaudeCommands ? impl.loadProjectCommands(ctx.directory) : Promise.resolve({}),
       impl.loadOpencodeGlobalCommands(),
-      impl.loadOpencodeProjectCommands(),
+      impl.loadOpencodeProjectCommands(ctx.directory),
       includeClaudeSkills ? impl.loadUserSkills() : Promise.resolve({}),
-      includeClaudeSkills ? impl.loadProjectSkills() : Promise.resolve({}),
+      includeClaudeSkills ? impl.loadProjectSkills(ctx.directory) : Promise.resolve({}),
       impl.loadOpencodeGlobalSkills(),
-      impl.loadOpencodeProjectSkills(),
+      impl.loadOpencodeProjectSkills(ctx.directory),
     ]);
 
     config.command = {

@@ -78,8 +78,8 @@ export function loadUserAgents(): Record<string, AgentConfig> {
   return result
 }
 
-export function loadProjectAgents(): Record<string, AgentConfig> {
-  const projectAgentsDir = join(process.cwd(), ".claude", "agents")
+export function loadProjectAgents(cwd: string = process.cwd()): Record<string, AgentConfig> {
+  const projectAgentsDir = join(cwd, ".claude", "agents")
   const agents = loadAgentsFromDir(projectAgentsDir, "project")
 
   const result: Record<string, AgentConfig> = {}

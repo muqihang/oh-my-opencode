@@ -187,8 +187,8 @@ export async function loadUserSkills(): Promise<Record<string, CommandDefinition
   return skillsToRecord(skills)
 }
 
-export async function loadProjectSkills(): Promise<Record<string, CommandDefinition>> {
-  const projectSkillsDir = join(process.cwd(), ".claude", "skills")
+export async function loadProjectSkills(cwd: string = process.cwd()): Promise<Record<string, CommandDefinition>> {
+  const projectSkillsDir = join(cwd, ".claude", "skills")
   const skills = await loadSkillsFromDir(projectSkillsDir, "project")
   return skillsToRecord(skills)
 }
@@ -200,8 +200,8 @@ export async function loadOpencodeGlobalSkills(): Promise<Record<string, Command
   return skillsToRecord(skills)
 }
 
-export async function loadOpencodeProjectSkills(): Promise<Record<string, CommandDefinition>> {
-  const opencodeProjectDir = join(process.cwd(), ".opencode", "skills")
+export async function loadOpencodeProjectSkills(cwd: string = process.cwd()): Promise<Record<string, CommandDefinition>> {
+  const opencodeProjectDir = join(cwd, ".opencode", "skills")
   const skills = await loadSkillsFromDir(opencodeProjectDir, "opencode-project")
   return skillsToRecord(skills)
 }

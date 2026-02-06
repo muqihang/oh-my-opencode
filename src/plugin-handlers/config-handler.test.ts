@@ -215,3 +215,65 @@ describe("Prometheus category config resolution", () => {
     expect(config?.tools).toEqual({ tool1: true, tool2: false })
   })
 })
+
+describe("project loader directory awareness", () => {
+  test("passes ctx.directory to project-scoped loaders", async () => {
+    //#given session directory differs from process.cwd()
+    const sessionDirectory = "/tmp/session-project-A"
+    const calls: Record<string, string | undefined> = {}
+
+    const overrides = {
+      ...testOverrides,
+      discoverProjectClaudeSkills: async (cwd?: string) => {
+        calls.discoverProjectClaudeSkills = cwd
+        return []
+      },
+      discoverOpencodeProjectSkills: async (cwd?: string) => {
+        calls.discoverOpencodeProjectSkills = cwd
+        return []
+      },
+      loadProjectCommands: async (cwd?: string) => {
+        calls.loadProjectCommands = cwd
+        return {}
+      },
+      loadOpencodeProjectCommands: async (cwd?: string) => {
+        calls.loadOpencodeProjectCommands = cwd
+        return {}
+      },
+      loadProjectSkills: async (cwd?: string) => {
+        calls.loadProjectSkills = cwd
+        return {}
+      },
+      loadOpencodeProjectSkills: async (cwd?: string) => {
+        calls.loadOpencodeProjectSkills = cwd
+        return {}
+      },
+      loadProjectAgents: (cwd?: string) => {
+        calls.loadProjectAgents = cwd
+        return {}
+      },
+    } satisfies Partial<ConfigHandlerOverrides>
+
+    const handler = createConfigHandler({
+      ctx: { directory: sessionDirectory },
+      pluginConfig: {},
+      modelCacheState: {
+        anthropicContext1MEnabled: false,
+        modelContextLimitsCache: new Map(),
+      },
+      overrides,
+    })
+
+    //#when resolving config
+    await handler({ model: "anthropic/claude-opus-4-5", agent: {} })
+
+    //#then all project-scoped loaders should receive ctx.directory
+    expect(calls.discoverProjectClaudeSkills).toBe(sessionDirectory)
+    expect(calls.discoverOpencodeProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadProjectCommands).toBe(sessionDirectory)
+    expect(calls.loadOpencodeProjectCommands).toBe(sessionDirectory)
+    expect(calls.loadProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadOpencodeProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadProjectAgents).toBe(sessionDirectory)
+  })
+})

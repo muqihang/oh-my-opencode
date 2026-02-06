@@ -4,34 +4,63 @@ import { homedir } from "os"
 import type { z } from "zod"
 import type { OhMyOpenCodeConfig } from "../../config/schema"
 
-export function getTaskDir(listId: string, config: Partial<OhMyOpenCodeConfig>): string {
+export interface StoragePathOptions {
+  directory?: string
+  baseDir?: string
+}
+
+function resolveStorageBaseDir(options?: StoragePathOptions): string {
+  return options?.directory ?? options?.baseDir ?? process.cwd()
+}
+
+export function getTaskDir(
+  listId: string,
+  config: Partial<OhMyOpenCodeConfig>,
+  options?: StoragePathOptions,
+): string {
   const tasksConfig = config.sisyphus?.tasks
 
   if (tasksConfig?.claude_code_compat) {
     return join(homedir(), ".cache", "claude-code", "tasks", listId)
   }
 
+  const baseDir = resolveStorageBaseDir(options)
   const storagePath = tasksConfig?.storage_path ?? ".sisyphus/tasks"
-  return join(process.cwd(), storagePath, listId)
+  return join(baseDir, storagePath, listId)
 }
 
-export function getTaskPath(listId: string, taskId: string, config: Partial<OhMyOpenCodeConfig>): string {
-  return join(getTaskDir(listId, config), `${taskId}.json`)
+export function getTaskPath(
+  listId: string,
+  taskId: string,
+  config: Partial<OhMyOpenCodeConfig>,
+  options?: StoragePathOptions,
+): string {
+  return join(getTaskDir(listId, config, options), `${taskId}.json`)
 }
 
-export function getTeamDir(teamName: string, config: Partial<OhMyOpenCodeConfig>): string {
+export function getTeamDir(
+  teamName: string,
+  config: Partial<OhMyOpenCodeConfig>,
+  options?: StoragePathOptions,
+): string {
   const swarmConfig = config.sisyphus?.swarm
 
   if (swarmConfig?.storage_path?.includes("claude")) {
     return join(homedir(), ".claude", "teams", teamName)
   }
 
+  const baseDir = resolveStorageBaseDir(options)
   const storagePath = swarmConfig?.storage_path ?? ".sisyphus/teams"
-  return join(process.cwd(), storagePath, teamName)
+  return join(baseDir, storagePath, teamName)
 }
 
-export function getInboxPath(teamName: string, agentName: string, config: Partial<OhMyOpenCodeConfig>): string {
-  return join(getTeamDir(teamName, config), "inboxes", `${agentName}.json`)
+export function getInboxPath(
+  teamName: string,
+  agentName: string,
+  config: Partial<OhMyOpenCodeConfig>,
+  options?: StoragePathOptions,
+): string {
+  return join(getTeamDir(teamName, config, options), "inboxes", `${agentName}.json`)
 }
 
 export function ensureDir(dirPath: string): void {
