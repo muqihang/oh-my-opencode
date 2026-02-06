@@ -219,7 +219,7 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       ? impl.loadUserAgents()
       : {};
     const projectAgents = (pluginConfig.claude_code?.agents ?? true)
-      ? impl.loadProjectAgents()
+      ? impl.loadProjectAgents(ctx.directory)
       : {};
 
     // Plugin agents: Apply permission migration for compatibility
@@ -476,9 +476,9 @@ export function createConfigHandler(deps: ConfigHandlerDeps) {
       opencodeProjectSkills,
     ] = await Promise.all([
       includeClaudeCommands ? impl.loadUserCommands() : Promise.resolve({}),
-      includeClaudeCommands ? impl.loadProjectCommands() : Promise.resolve({}),
+      includeClaudeCommands ? impl.loadProjectCommands(ctx.directory) : Promise.resolve({}),
       impl.loadOpencodeGlobalCommands(),
-      impl.loadOpencodeProjectCommands(),
+      impl.loadOpencodeProjectCommands(ctx.directory),
       includeClaudeSkills ? impl.loadUserSkills() : Promise.resolve({}),
       includeClaudeSkills ? impl.loadProjectSkills() : Promise.resolve({}),
       impl.loadOpencodeGlobalSkills(),

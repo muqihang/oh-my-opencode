@@ -215,3 +215,51 @@ describe("Prometheus category config resolution", () => {
     expect(config?.tools).toEqual({ tool1: true, tool2: false })
   })
 })
+
+describe("Config handler directory forwarding", () => {
+  test("passes ctx.directory to project command and agent loaders", async () => {
+    // #given
+    const expectedDirectory = "/tmp/oh-my-opencode-session-directory"
+    const calls = {
+      projectCommandsDirectory: "",
+      opencodeProjectCommandsDirectory: "",
+      projectAgentsDirectory: "",
+    }
+
+    const handler = createConfigHandler({
+      ctx: { directory: expectedDirectory },
+      pluginConfig: {},
+      modelCacheState: {
+        anthropicContext1MEnabled: false,
+        modelContextLimitsCache: new Map(),
+      },
+      overrides: {
+        ...testOverrides,
+        loadProjectCommands: async (directory?: string) => {
+          calls.projectCommandsDirectory = directory ?? ""
+          return {}
+        },
+        loadOpencodeProjectCommands: async (directory?: string) => {
+          calls.opencodeProjectCommandsDirectory = directory ?? ""
+          return {}
+        },
+        loadProjectAgents: (directory?: string) => {
+          calls.projectAgentsDirectory = directory ?? ""
+          return {}
+        },
+      },
+    })
+
+    // #when
+    await handler({
+      model: "anthropic/claude-opus-4-5",
+      agent: {},
+      command: {},
+    })
+
+    // #then
+    expect(calls.projectCommandsDirectory).toBe(expectedDirectory)
+    expect(calls.opencodeProjectCommandsDirectory).toBe(expectedDirectory)
+    expect(calls.projectAgentsDirectory).toBe(expectedDirectory)
+  })
+})

@@ -67,6 +67,10 @@ function loadAgentsFromDir(agentsDir: string, scope: AgentScope): LoadedAgent[] 
   return agents
 }
 
+function resolveDirectory(directory?: string): string {
+  return directory ?? process.cwd()
+}
+
 export function loadUserAgents(): Record<string, AgentConfig> {
   const userAgentsDir = join(getClaudeConfigDir(), "agents")
   const agents = loadAgentsFromDir(userAgentsDir, "user")
@@ -78,8 +82,8 @@ export function loadUserAgents(): Record<string, AgentConfig> {
   return result
 }
 
-export function loadProjectAgents(): Record<string, AgentConfig> {
-  const projectAgentsDir = join(process.cwd(), ".claude", "agents")
+export function loadProjectAgents(directory?: string): Record<string, AgentConfig> {
+  const projectAgentsDir = join(resolveDirectory(directory), ".claude", "agents")
   const agents = loadAgentsFromDir(projectAgentsDir, "project")
 
   const result: Record<string, AgentConfig> = {}

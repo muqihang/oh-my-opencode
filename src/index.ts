@@ -393,7 +393,7 @@ const OhMyOpenCodePlugin: Plugin = async (ctx) => {
   });
 
   const autoSlashCommand = isHookEnabled("auto-slash-command")
-    ? createAutoSlashCommandHook({ skills: mergedSkills })
+    ? createAutoSlashCommandHook({ skills: mergedSkills, directory: ctx.directory })
     : null;
 
   const configHandler = createConfigHandler({

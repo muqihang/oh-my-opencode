@@ -23,11 +23,13 @@ const sessionProcessedCommands = new Set<string>()
 
 export interface AutoSlashCommandHookOptions {
   skills?: LoadedSkill[]
+  directory?: string
 }
 
 export function createAutoSlashCommandHook(options?: AutoSlashCommandHookOptions) {
   const executorOptions: ExecutorOptions = {
     skills: options?.skills,
+    directory: options?.directory,
   }
 
   return {

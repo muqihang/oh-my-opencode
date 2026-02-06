@@ -98,14 +98,20 @@ function skillToCommandInfo(skill: LoadedSkill): CommandInfo {
 
 export interface ExecutorOptions {
   skills?: LoadedSkill[]
+  directory?: string
+}
+
+function resolveDirectory(directory?: string): string {
+  return directory ?? process.cwd()
 }
 
 async function discoverAllCommands(options?: ExecutorOptions): Promise<CommandInfo[]> {
+  const directory = resolveDirectory(options?.directory)
   const configDir = getOpenCodeConfigDir({ binary: "opencode" })
   const userCommandsDir = join(getClaudeConfigDir(), "commands")
-  const projectCommandsDir = join(process.cwd(), ".claude", "commands")
+  const projectCommandsDir = join(directory, ".claude", "commands")
   const opencodeGlobalDir = join(configDir, "command")
-  const opencodeProjectDir = join(process.cwd(), ".opencode", "command")
+  const opencodeProjectDir = join(directory, ".opencode", "command")
 
   const userCommands = discoverCommandsFromDir(userCommandsDir, "user")
   const opencodeGlobalCommands = discoverCommandsFromDir(opencodeGlobalDir, "opencode")

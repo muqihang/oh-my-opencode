@@ -1,4 +1,7 @@
-import { describe, expect, it, beforeEach, mock, spyOn } from "bun:test"
+import { describe, expect, it, beforeEach, afterEach, mock, spyOn } from "bun:test"
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import type {
   AutoSlashCommandHookInput,
   AutoSlashCommandHookOutput,
@@ -36,8 +39,35 @@ function createMockOutput(text: string): AutoSlashCommandHookOutput {
 }
 
 describe("createAutoSlashCommandHook", () => {
+  let tempDir: string
+  let originalCwd: string
+  let originalClaudeConfigDir: string | undefined
+  let originalOpenCodeConfigDir: string | undefined
+
   beforeEach(() => {
     logMock.mockClear()
+    tempDir = mkdtempSync(join(tmpdir(), "omo-auto-slash-hook-"))
+    originalCwd = process.cwd()
+    originalClaudeConfigDir = process.env.CLAUDE_CONFIG_DIR
+    originalOpenCodeConfigDir = process.env.OPENCODE_CONFIG_DIR
+  })
+
+  afterEach(() => {
+    process.chdir(originalCwd)
+
+    if (originalClaudeConfigDir === undefined) {
+      delete process.env.CLAUDE_CONFIG_DIR
+    } else {
+      process.env.CLAUDE_CONFIG_DIR = originalClaudeConfigDir
+    }
+
+    if (originalOpenCodeConfigDir === undefined) {
+      delete process.env.OPENCODE_CONFIG_DIR
+    } else {
+      process.env.OPENCODE_CONFIG_DIR = originalOpenCodeConfigDir
+    }
+
+    rmSync(tempDir, { recursive: true, force: true })
   })
 
   describe("slash command replacement", () => {
@@ -184,6 +214,41 @@ describe("createAutoSlashCommandHook", () => {
 
       // #then should not detect
       expect(output.parts[0].text).toBe(originalText)
+    })
+  })
+
+  describe("directory forwarding", () => {
+    it("should resolve commands from provided directory when cwd differs", async () => {
+      // #given session directory A with command (directory override is the signal)
+      const dirA = join(tempDir, "A")
+      mkdirSync(dirA, { recursive: true })
+
+      const projectCommandsDir = join(dirA, ".claude", "commands")
+      mkdirSync(projectCommandsDir, { recursive: true })
+      writeFileSync(
+        join(projectCommandsDir, "zz-hook-session-command.md"),
+        "---\ndescription: hook command\n---\nHook command from session directory\n",
+        "utf8",
+      )
+
+      const emptyClaudeConfigDir = join(tempDir, "empty-claude-config")
+      const emptyOpenCodeConfigDir = join(tempDir, "empty-opencode-config")
+      mkdirSync(emptyClaudeConfigDir, { recursive: true })
+      mkdirSync(emptyOpenCodeConfigDir, { recursive: true })
+      process.env.CLAUDE_CONFIG_DIR = emptyClaudeConfigDir
+      process.env.OPENCODE_CONFIG_DIR = emptyOpenCodeConfigDir
+
+      const hook = createAutoSlashCommandHook({ directory: dirA, skills: [] })
+      const sessionID = `test-session-directory-${Date.now()}`
+      const input = createMockInput(sessionID)
+      const output = createMockOutput("/zz-hook-session-command")
+
+      // #when hook executes slash command
+      await hook["chat.message"](input, output)
+
+      // #then message is replaced using command found in A
+      expect(output.parts[0].text).toContain("<auto-slash-command>")
+      expect(output.parts[0].text).toContain("Hook command from session directory")
     })
   })
 
