@@ -1,7 +1,8 @@
 import type { PluginInput } from "@opencode-ai/plugin"
 import { execSync } from "node:child_process"
-import { existsSync, readdirSync } from "node:fs"
-import { join } from "node:path"
+import { createHash } from "node:crypto"
+import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync } from "node:fs"
+import { dirname, join } from "node:path"
 import {
   readBoulderState,
   appendSessionId,
@@ -369,6 +370,152 @@ function formatFileChanges(stats: GitFileStat[], notepadPath?: string): string {
   }
 
   return lines.join("\n")
+}
+
+type AtlasPathMode = "plan-notepad" | "global"
+
+type AtlasJournalInput = {
+  baseDir: string
+  mode: AtlasPathMode
+  planName?: string
+  callID?: string
+  orchestratorSessionId?: string
+  subagentSessionId: string
+  fileChanges: string
+  fullReminder: string
+}
+
+type AtlasJournalResult = {
+  ok: boolean
+  relPath: string
+  error?: string
+}
+
+function isSafePlanName(name: string): boolean {
+  return /^[A-Za-z0-9._-]+$/.test(name)
+}
+
+function resolveAtlasJournalRelPath(mode: AtlasPathMode, planName?: string): string {
+  const safePlan = planName && isSafePlanName(planName) ? planName : undefined
+  const scope = mode === "global" || !safePlan ? "_global" : safePlan
+  return `.sisyphus/notepads/${scope}/atlas-journal.md`
+}
+
+function buildAtlasShortReminder(
+  subagentSessionId: string,
+  atlasJournalPath: string,
+  planName?: string,
+  progress?: { total: number; completed: number }
+): string {
+  const remaining = progress ? progress.total - progress.completed : 0
+  const line2 = planName
+    ? `2) 验证通过后，立刻去 plan/todo 更新进度（有 plan 就改 \`.sisyphus/tasks/${planName}.yaml\` 的 [ ]→[x]；无 plan 就 todowrite）。`
+    : "2) 验证通过后，立刻去 plan/todo 更新进度（无 plan 就 todowrite）。"
+  const line6 = planName && progress
+    ? `6) 计划进度：${progress.completed}/${progress.total}（剩余 ${remaining}） + boulder 路径提示：\`.sisyphus/boulder.json\`。`
+    : "6) 计划进度：无 plan（standalone）；请用 todowrite 持续追踪。"
+
+  return [
+    "1) 先别信子会话说\"完成\"，你必须自己验证：lsp_diagnostics + 测试 + typecheck。",
+    line2,
+    `3) 如果验证失败，直接用：delegate_task(session_id=\"${subagentSessionId}\", prompt=\"fix: [具体失败原因]\") 让同一个子会话修。`,
+    "4) 需要手动 QA（UI/TUI/API）就把 QA 写进 todo/plan，再做；不要口头“看起来没问题”。",
+    `5) 子会话续跑 ID：session_id=\"${subagentSessionId}\"（保留这一行，便于继续追问）`,
+    line6,
+    `7) 详细文件变更清单 + 完整操作手册在：\`${atlasJournalPath}\`（必须时去读）。`,
+  ].join("\n")
+}
+
+function buildAtlasLegacyOutput(
+  originalResponse: string,
+  fileChanges: string,
+  fullReminder: string,
+  planName?: string,
+  progress?: { total: number; completed: number }
+): string {
+  if (!planName || !progress) {
+    return `${originalResponse}\n<system-reminder>\n${fullReminder}\n</system-reminder>`
+  }
+
+  return `
+## SUBAGENT WORK COMPLETED
+
+${fileChanges}
+
+---
+
+**Subagent Response:**
+
+${originalResponse}
+
+<system-reminder>
+${fullReminder}
+</system-reminder>`
+}
+
+function buildAtlasShortOutput(originalResponse: string, shortReminder: string): string {
+  return `
+## SUBAGENT WORK COMPLETED
+
+---
+
+**Subagent Response:**
+
+${originalResponse}
+
+<system-reminder>
+${shortReminder}
+</system-reminder>`
+}
+
+function appendAtlasJournal(input: AtlasJournalInput): AtlasJournalResult {
+  const relPath = resolveAtlasJournalRelPath(input.mode, input.planName)
+  const absPath = join(input.baseDir, relPath)
+  const key = input.callID
+    ? `call:${input.callID}`
+    : createHash("sha256")
+      .update(`${input.orchestratorSessionId ?? ""}:${input.subagentSessionId}:${input.planName ?? ""}:${input.fileChanges}:${input.fullReminder}`)
+      .digest("hex")
+      .slice(0, 24)
+  const marker = `<!-- atlas_journal_entry:${key} -->`
+
+  try {
+    mkdirSync(dirname(absPath), { recursive: true })
+    const existing = existsSync(absPath) ? readFileSync(absPath, "utf-8") : ""
+    if (existing.includes(marker)) {
+      return { ok: true, relPath }
+    }
+
+    const ts = new Date().toISOString()
+    const block = [
+      "",
+      marker,
+      `## ${ts}`,
+      `- ts: ${ts}`,
+      `- callID: ${input.callID ?? "<none>"}`,
+      `- planName: ${input.planName ?? "<none>"}`,
+      `- orchestratorSessionId: ${input.orchestratorSessionId ?? "<none>"}`,
+      `- subagentSessionId: ${input.subagentSessionId}`,
+      "- fileChanges: included below",
+      "- fullReminder: included below",
+      "",
+      "### fileChanges",
+      "```text",
+      input.fileChanges,
+      "```",
+      "",
+      "### fullReminder",
+      "```text",
+      input.fullReminder,
+      "```",
+      "",
+    ].join("\n")
+
+    appendFileSync(absPath, block)
+    return { ok: true, relPath }
+  } catch (error) {
+    return { ok: false, relPath, error: String(error) }
+  }
 }
 
 interface ToolExecuteAfterInput {
@@ -795,51 +942,97 @@ export function createAtlasHook(
         const gitStats = getGitDiffStats(ctx.directory)
         const fileChanges = formatFileChanges(gitStats)
         const subagentSessionId = extractSessionIdFromOutput(output.output)
-
         const boulderState = readBoulderState(ctx.directory)
+        const originalResponse = output.output
+        const progress = boulderState ? getPlanProgress(boulderState.active_plan) : undefined
+        const fullReminder = boulderState
+          ? buildOrchestratorReminder(boulderState.plan_name, progress!, subagentSessionId)
+          : buildStandaloneVerificationReminder(subagentSessionId)
+        const legacyOutput = buildAtlasLegacyOutput(
+          originalResponse,
+          fileChanges,
+          fullReminder,
+          boulderState?.plan_name,
+          progress,
+        )
 
-        if (boulderState) {
-          const progress = getPlanProgress(boulderState.active_plan)
-
-          if (input.sessionID && !boulderState.session_ids.includes(input.sessionID)) {
-            appendSessionId(ctx.directory, input.sessionID)
-            log(`[${HOOK_NAME}] Appended session to boulder`, {
-              sessionID: input.sessionID,
-              plan: boulderState.plan_name,
-            })
-          }
-
-          // Preserve original subagent response - critical for debugging failed tasks
-          const originalResponse = output.output
-
-          output.output = `
-## SUBAGENT WORK COMPLETED
-
-${fileChanges}
-
----
-
-**Subagent Response:**
-
-${originalResponse}
-
-<system-reminder>
-${buildOrchestratorReminder(boulderState.plan_name, progress, subagentSessionId)}
-</system-reminder>`
-
-          log(`[${HOOK_NAME}] Output transformed for orchestrator mode (boulder)`, {
+        if (boulderState && input.sessionID && !boulderState.session_ids.includes(input.sessionID)) {
+          appendSessionId(ctx.directory, input.sessionID)
+          log(`[${HOOK_NAME}] Appended session to boulder`, {
+            sessionID: input.sessionID,
             plan: boulderState.plan_name,
-            progress: `${progress.completed}/${progress.total}`,
-            fileCount: gitStats.length,
           })
-        } else {
-          output.output += `\n<system-reminder>\n${buildStandaloneVerificationReminder(subagentSessionId)}\n</system-reminder>`
+        }
 
+        const atlasJournal = options?.experimental?.atlas_journal
+        const atlasJournalEnabled = atlasJournal?.enabled === true
+
+        if (!atlasJournalEnabled) {
+          output.output = legacyOutput
+          if (boulderState && progress) {
+            log(`[${HOOK_NAME}] Output transformed for orchestrator mode (boulder)`, {
+              plan: boulderState.plan_name,
+              progress: `${progress.completed}/${progress.total}`,
+              fileCount: gitStats.length,
+            })
+            return
+          }
           log(`[${HOOK_NAME}] Verification reminder appended for orchestrator`, {
             sessionID: input.sessionID,
             fileCount: gitStats.length,
           })
+          return
         }
+
+        const journal = appendAtlasJournal({
+          baseDir: ctx.directory,
+          mode: atlasJournal?.path_mode ?? "plan-notepad",
+          planName: boulderState?.plan_name,
+          callID: input.callID,
+          orchestratorSessionId: input.sessionID,
+          subagentSessionId,
+          fileChanges,
+          fullReminder,
+        })
+
+        if (!journal.ok) {
+          output.output = legacyOutput
+          log(`[${HOOK_NAME}] atlas_journal append failed, falling back to legacy output`, {
+            sessionID: input.sessionID,
+            error: journal.error,
+            path: journal.relPath,
+          })
+          if (atlasJournal?.verbose) {
+            output.output += `\n\n[atlas_journal] fallback: ${journal.error ?? "unknown error"}`
+          }
+          return
+        }
+
+        const shortReminderEnabled = atlasJournal?.short_reminder !== false
+        if (!shortReminderEnabled) {
+          output.output = legacyOutput
+          if (atlasJournal?.verbose) {
+            output.output += `\n\n[atlas_journal] appended: ${journal.relPath}`
+          }
+          return
+        }
+
+        const shortReminder = buildAtlasShortReminder(
+          subagentSessionId,
+          journal.relPath,
+          boulderState?.plan_name,
+          progress,
+        )
+        output.output = buildAtlasShortOutput(originalResponse, shortReminder)
+        if (atlasJournal?.verbose) {
+          output.output += `\n\n[atlas_journal] appended: ${journal.relPath}`
+        }
+
+        log(`[${HOOK_NAME}] atlas_journal short reminder emitted`, {
+          sessionID: input.sessionID,
+          path: journal.relPath,
+          plan: boulderState?.plan_name,
+        })
       }
     },
   }

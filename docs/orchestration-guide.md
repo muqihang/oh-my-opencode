@@ -328,6 +328,43 @@ Notes:
 - allowlist affects both the Markdown index and the v2 JSON outputs.
 - Path safety checks still apply (entries must be safe relative paths, no `..`, and must be under `.opencode/`).
 
+### Experimental: Atlas Journal (delegate_task reminder denoise)
+
+When Atlas finishes a `delegate_task`, legacy behavior appends a long reminder and file-change summary directly into chat output. For long-running orchestration sessions, this can bloat context.
+
+`experimental.atlas_journal` provides an opt-in path to keep quality guardrails while reducing context pressure:
+
+- Writes full long reminder + file changes to an append-only ledger file under `.sisyphus/notepads/**`
+- Optionally replaces in-chat long reminder with a fixed 7-line short reminder + journal pointer
+- Always keeps **Subagent Response** body in chat output
+- Never blocks execution: write failures automatically fall back to legacy output
+
+Config (defaults preserve current behavior):
+
+```jsonc
+{
+  "experimental": {
+    "atlas_journal": {
+      "enabled": false,
+      "short_reminder": true,
+      "path_mode": "plan-notepad",
+      "verbose": false
+    }
+  }
+}
+```
+
+Path rules:
+- With boulder plan (and `path_mode="plan-notepad"`): `.sisyphus/notepads/<plan>/atlas-journal.md`
+- Without plan (or `path_mode="global"`): `.sisyphus/notepads/_global/atlas-journal.md`
+
+Ledger entry fields include timestamp, plan/session IDs, full file change summary, and full legacy reminder text. Entries are append-only and deduplicated by call marker to avoid duplicate writes for the same tool call.
+
+Quick acceptance checklist:
+- `enabled=false`: output remains legacy (`SUBAGENT WORK COMPLETED` + file changes + long `<system-reminder>`)
+- `enabled=true` + write success + `short_reminder=true`: output switches to 7-line short reminder + journal pointer
+- `enabled=true` + write failure: output falls back to legacy behavior
+
 ## 7. Best Practices
 
 1. **Don't Rush**: Invest sufficient time in the interview with Prometheus. The more perfect the plan, the faster the execution.

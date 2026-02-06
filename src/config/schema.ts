@@ -268,6 +268,12 @@ export const ExperimentalConfigSchema = z.object({
   opencode_orchestrator_compat: z.object({
     enabled: z.boolean().default(false),
   }).optional(),
+  atlas_journal: z.object({
+    enabled: z.boolean().default(false),
+    short_reminder: z.boolean().default(true),
+    path_mode: z.enum(["plan-notepad", "global"]).default("plan-notepad"),
+    verbose: z.boolean().default(false),
+  }).optional(),
 })
 
 export const SkillSourceSchema = z.union([

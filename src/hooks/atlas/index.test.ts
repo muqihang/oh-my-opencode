@@ -1,5 +1,5 @@
 import { describe, expect, test, beforeEach, afterEach, mock } from "bun:test"
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs"
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs"
 import { join } from "node:path"
 import { tmpdir } from "node:os"
 import { createAtlasHook } from "./index"
@@ -609,6 +609,275 @@ describe("atlas hook", () => {
       expect(output.output).toContain("MANDATORY:")
       
       cleanupMessageStorage(sessionID)
+    })
+
+    describe("atlas_journal", () => {
+      test("keeps legacy delegate_task output when atlas_journal is disabled", async () => {
+        //#given
+        const sessionID = "session-atlas-journal-off"
+        setupMessageStorage(sessionID, "atlas")
+
+        const planPath = join(TEST_DIR, "legacy-plan.md")
+        writeFileSync(planPath, "# Plan\n- [ ] Task 1\n- [x] Task 2")
+
+        const state: BoulderState = {
+          active_plan: planPath,
+          started_at: "2026-01-02T10:00:00Z",
+          session_ids: [sessionID],
+          plan_name: "legacy-plan",
+        }
+        writeBoulderState(TEST_DIR, state)
+
+        const hook = createAtlasHook(createMockPluginInput(), {
+          directory: TEST_DIR,
+          experimental: {
+            atlas_journal: {
+              enabled: false,
+              short_reminder: true,
+              path_mode: "plan-notepad",
+              verbose: false,
+            },
+          },
+        })
+        const output = {
+          title: "Sisyphus Task",
+          output: "Task completed successfully\nSession ID: ses_legacy001",
+          metadata: {},
+        }
+
+        //#when
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-legacy" },
+          output
+        )
+
+        //#then
+        expect(output.output).toContain("SUBAGENT WORK COMPLETED")
+        expect(output.output).toContain("[FILE CHANGES SUMMARY]")
+        expect(output.output).toContain("<system-reminder>")
+        expect(output.output).toContain("MANDATORY:")
+        expect(output.output).not.toContain("详细文件变更清单 + 完整操作手册在：")
+
+        cleanupMessageStorage(sessionID)
+      })
+
+      test("writes journal under plan notepad and shows 7-line short reminder when enabled", async () => {
+        //#given
+        const sessionID = "session-atlas-journal-plan"
+        setupMessageStorage(sessionID, "atlas")
+
+        const planPath = join(TEST_DIR, "short-plan.md")
+        writeFileSync(planPath, "# Plan\n- [x] Task 1\n- [ ] Task 2\n- [ ] Task 3")
+
+        const state: BoulderState = {
+          active_plan: planPath,
+          started_at: "2026-01-02T10:00:00Z",
+          session_ids: [sessionID],
+          plan_name: "short-plan",
+        }
+        writeBoulderState(TEST_DIR, state)
+
+        const hook = createAtlasHook(createMockPluginInput(), {
+          directory: TEST_DIR,
+          experimental: {
+            atlas_journal: {
+              enabled: true,
+              short_reminder: true,
+              path_mode: "plan-notepad",
+              verbose: false,
+            },
+          },
+        })
+
+        const output = {
+          title: "Sisyphus Task",
+          output: "Subagent done\nSession ID: ses_short001",
+          metadata: {},
+        }
+
+        //#when
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-short-plan" },
+          output
+        )
+
+        //#then
+        expect(output.output).toContain("SUBAGENT WORK COMPLETED")
+        expect(output.output).toContain("**Subagent Response:**")
+        expect(output.output).toContain("Subagent done")
+        expect(output.output).toContain("先别信子会话说\"完成\"，你必须自己验证")
+        expect(output.output).toContain("有 plan 就改 `.sisyphus/tasks/short-plan.yaml` 的 [ ]→[x]")
+        expect(output.output).toContain("delegate_task(session_id=\"ses_short001\", prompt=\"fix: [具体失败原因]\")")
+        expect(output.output).toContain("子会话续跑 ID：session_id=\"ses_short001\"")
+        expect(output.output).toContain("计划进度：1/3（剩余 2）")
+        expect(output.output).toContain(".sisyphus/boulder.json")
+        expect(output.output).toContain("详细文件变更清单 + 完整操作手册在：`.sisyphus/notepads/short-plan/atlas-journal.md`")
+        expect(output.output).not.toContain("[FILE CHANGES SUMMARY]")
+
+        const journalPath = join(TEST_DIR, ".sisyphus", "notepads", "short-plan", "atlas-journal.md")
+        expect(existsSync(journalPath)).toBe(true)
+
+        const journal = readFileSync(journalPath, "utf-8")
+        expect(journal).toContain("planName: short-plan")
+        expect(journal).toContain("orchestratorSessionId: session-atlas-journal-plan")
+        expect(journal).toContain("subagentSessionId: ses_short001")
+        expect(journal).toContain("fileChanges:")
+        expect(journal).toContain("fullReminder:")
+
+        cleanupMessageStorage(sessionID)
+      })
+
+      test("uses global journal path without boulder and keeps 7-line reminder", async () => {
+        //#given
+        const sessionID = "session-atlas-journal-global"
+        setupMessageStorage(sessionID, "atlas")
+
+        const hook = createAtlasHook(createMockPluginInput(), {
+          directory: TEST_DIR,
+          experimental: {
+            atlas_journal: {
+              enabled: true,
+              short_reminder: true,
+              path_mode: "plan-notepad",
+              verbose: false,
+            },
+          },
+        })
+
+        const output = {
+          title: "Sisyphus Task",
+          output: "Standalone done\nSession ID: ses_global001",
+          metadata: {},
+        }
+
+        //#when
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-short-global" },
+          output
+        )
+
+        //#then
+        expect(output.output).toContain("SUBAGENT WORK COMPLETED")
+        expect(output.output).toContain("无 plan 就 todowrite")
+        expect(output.output).toContain("计划进度：无 plan（standalone）")
+        expect(output.output).toContain(".sisyphus/notepads/_global/atlas-journal.md")
+        expect(output.output).not.toContain("[FILE CHANGES SUMMARY]")
+
+        const journalPath = join(TEST_DIR, ".sisyphus", "notepads", "_global", "atlas-journal.md")
+        expect(existsSync(journalPath)).toBe(true)
+
+        cleanupMessageStorage(sessionID)
+      })
+
+      test("falls back to legacy output when journal write fails", async () => {
+        //#given
+        const sessionID = "session-atlas-journal-fail"
+        setupMessageStorage(sessionID, "atlas")
+
+        const planPath = join(TEST_DIR, "fail-plan.md")
+        writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+        const state: BoulderState = {
+          active_plan: planPath,
+          started_at: "2026-01-02T10:00:00Z",
+          session_ids: [sessionID],
+          plan_name: "fail-plan",
+        }
+        writeBoulderState(TEST_DIR, state)
+
+        writeFileSync(join(TEST_DIR, ".sisyphus", "notepads"), "blocked")
+
+        const hook = createAtlasHook(createMockPluginInput(), {
+          directory: TEST_DIR,
+          experimental: {
+            atlas_journal: {
+              enabled: true,
+              short_reminder: true,
+              path_mode: "plan-notepad",
+              verbose: false,
+            },
+          },
+        })
+
+        const output = {
+          title: "Sisyphus Task",
+          output: "Fallback case\nSession ID: ses_fail001",
+          metadata: {},
+        }
+
+        //#when
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-short-fail" },
+          output
+        )
+
+        //#then
+        expect(output.output).toContain("SUBAGENT WORK COMPLETED")
+        expect(output.output).toContain("[FILE CHANGES SUMMARY]")
+        expect(output.output).toContain("<system-reminder>")
+        expect(output.output).toContain("MANDATORY:")
+        expect(output.output).not.toContain("详细文件变更清单 + 完整操作手册在：")
+
+        cleanupMessageStorage(sessionID)
+      })
+
+      test("does not append duplicate journal entry for same callID", async () => {
+        //#given
+        const sessionID = "session-atlas-journal-dedupe"
+        setupMessageStorage(sessionID, "atlas")
+
+        const planPath = join(TEST_DIR, "dedupe-plan.md")
+        writeFileSync(planPath, "# Plan\n- [ ] Task 1")
+
+        const state: BoulderState = {
+          active_plan: planPath,
+          started_at: "2026-01-02T10:00:00Z",
+          session_ids: [sessionID],
+          plan_name: "dedupe-plan",
+        }
+        writeBoulderState(TEST_DIR, state)
+
+        const hook = createAtlasHook(createMockPluginInput(), {
+          directory: TEST_DIR,
+          experimental: {
+            atlas_journal: {
+              enabled: true,
+              short_reminder: false,
+              path_mode: "plan-notepad",
+              verbose: false,
+            },
+          },
+        })
+
+        const first = {
+          title: "Sisyphus Task",
+          output: "First run\nSession ID: ses_dup001",
+          metadata: {},
+        }
+        const second = {
+          title: "Sisyphus Task",
+          output: "Second run\nSession ID: ses_dup001",
+          metadata: {},
+        }
+
+        //#when
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-dedupe" },
+          first
+        )
+        await hook["tool.execute.after"](
+          { tool: "delegate_task", sessionID, callID: "call-dedupe" },
+          second
+        )
+
+        //#then
+        const journalPath = join(TEST_DIR, ".sisyphus", "notepads", "dedupe-plan", "atlas-journal.md")
+        const journal = readFileSync(journalPath, "utf-8")
+        const count = journal.split("callID: call-dedupe").length - 1
+        expect(count).toBe(1)
+
+        cleanupMessageStorage(sessionID)
+      })
     })
 
     describe("Write/Edit tool direct work reminder", () => {
