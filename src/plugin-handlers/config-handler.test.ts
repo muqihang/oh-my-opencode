@@ -216,50 +216,64 @@ describe("Prometheus category config resolution", () => {
   })
 })
 
-describe("Config handler directory forwarding", () => {
-  test("passes ctx.directory to project command and agent loaders", async () => {
+describe("project loader directory awareness", () => {
+  test("passes ctx.directory to project-scoped loaders", async () => {
     // #given
-    const expectedDirectory = "/tmp/oh-my-opencode-session-directory"
-    const calls = {
-      projectCommandsDirectory: "",
-      opencodeProjectCommandsDirectory: "",
-      projectAgentsDirectory: "",
-    }
+    const sessionDirectory = "/tmp/session-project-A"
+    const calls: Record<string, string | undefined> = {}
+
+    const overrides = {
+      ...testOverrides,
+      discoverProjectClaudeSkills: async (cwd?: string) => {
+        calls.discoverProjectClaudeSkills = cwd
+        return []
+      },
+      discoverOpencodeProjectSkills: async (cwd?: string) => {
+        calls.discoverOpencodeProjectSkills = cwd
+        return []
+      },
+      loadProjectCommands: async (cwd?: string) => {
+        calls.loadProjectCommands = cwd
+        return {}
+      },
+      loadOpencodeProjectCommands: async (cwd?: string) => {
+        calls.loadOpencodeProjectCommands = cwd
+        return {}
+      },
+      loadProjectSkills: async (cwd?: string) => {
+        calls.loadProjectSkills = cwd
+        return {}
+      },
+      loadOpencodeProjectSkills: async (cwd?: string) => {
+        calls.loadOpencodeProjectSkills = cwd
+        return {}
+      },
+      loadProjectAgents: (cwd?: string) => {
+        calls.loadProjectAgents = cwd
+        return {}
+      },
+    } satisfies Partial<ConfigHandlerOverrides>
 
     const handler = createConfigHandler({
-      ctx: { directory: expectedDirectory },
+      ctx: { directory: sessionDirectory },
       pluginConfig: {},
       modelCacheState: {
         anthropicContext1MEnabled: false,
         modelContextLimitsCache: new Map(),
       },
-      overrides: {
-        ...testOverrides,
-        loadProjectCommands: async (directory?: string) => {
-          calls.projectCommandsDirectory = directory ?? ""
-          return {}
-        },
-        loadOpencodeProjectCommands: async (directory?: string) => {
-          calls.opencodeProjectCommandsDirectory = directory ?? ""
-          return {}
-        },
-        loadProjectAgents: (directory?: string) => {
-          calls.projectAgentsDirectory = directory ?? ""
-          return {}
-        },
-      },
+      overrides,
     })
 
     // #when
-    await handler({
-      model: "anthropic/claude-opus-4-5",
-      agent: {},
-      command: {},
-    })
+    await handler({ model: "anthropic/claude-opus-4-5", agent: {} })
 
     // #then
-    expect(calls.projectCommandsDirectory).toBe(expectedDirectory)
-    expect(calls.opencodeProjectCommandsDirectory).toBe(expectedDirectory)
-    expect(calls.projectAgentsDirectory).toBe(expectedDirectory)
+    expect(calls.discoverProjectClaudeSkills).toBe(sessionDirectory)
+    expect(calls.discoverOpencodeProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadProjectCommands).toBe(sessionDirectory)
+    expect(calls.loadOpencodeProjectCommands).toBe(sessionDirectory)
+    expect(calls.loadProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadOpencodeProjectSkills).toBe(sessionDirectory)
+    expect(calls.loadProjectAgents).toBe(sessionDirectory)
   })
 })

@@ -13,15 +13,70 @@ import {
 } from "./storage"
 
 const TEST_DIR = join(import.meta.dirname, ".test-storage")
+let originalCwd = process.cwd()
 
 describe("Storage Utilities", () => {
   beforeEach(() => {
+    originalCwd = process.cwd()
     rmSync(TEST_DIR, { recursive: true, force: true })
     mkdirSync(TEST_DIR, { recursive: true })
   })
 
   afterEach(() => {
+    process.chdir(originalCwd)
     rmSync(TEST_DIR, { recursive: true, force: true })
+  })
+
+  describe("directory-aware path resolution", () => {
+    //#given a session directory A
+    //#when resolving task dir/path with explicit directory
+    //#then it should resolve into A
+    it("resolves task dir/path from explicit session directory", () => {
+      const sessionDirectory = join(TEST_DIR, "session-A")
+
+      mkdirSync(sessionDirectory, { recursive: true })
+
+      const config = {
+        sisyphus: {
+          tasks: {
+            storage_path: ".sisyphus/tasks",
+            enabled: true,
+            claude_code_compat: false,
+          },
+        },
+      }
+
+      const taskDir = getTaskDir("list-123", config, { directory: sessionDirectory })
+      const taskPath = getTaskPath("list-123", "1", config, { directory: sessionDirectory })
+
+      expect(taskDir).toBe(join(sessionDirectory, ".sisyphus", "tasks", "list-123"))
+      expect(taskPath).toBe(join(sessionDirectory, ".sisyphus", "tasks", "list-123", "1.json"))
+    })
+
+    //#given a session directory A
+    //#when resolving team dir/inbox path with explicit directory
+    //#then it should resolve into A
+    it("resolves team dir/path from explicit session directory", () => {
+      const sessionDirectory = join(TEST_DIR, "session-A")
+
+      mkdirSync(sessionDirectory, { recursive: true })
+
+      const config = {
+        sisyphus: {
+          swarm: {
+            storage_path: ".sisyphus/teams",
+            enabled: true,
+            ui_mode: "toast" as const,
+          },
+        },
+      }
+
+      const teamDir = getTeamDir("my-team", config, { directory: sessionDirectory })
+      const inboxPath = getInboxPath("my-team", "agent-001", config, { directory: sessionDirectory })
+
+      expect(teamDir).toBe(join(sessionDirectory, ".sisyphus", "teams", "my-team"))
+      expect(inboxPath).toBe(join(sessionDirectory, ".sisyphus", "teams", "my-team", "inboxes", "agent-001.json"))
+    })
   })
 
   describe("getTaskDir", () => {
