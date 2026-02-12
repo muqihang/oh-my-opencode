@@ -2,8 +2,8 @@ import type { PluginInput } from "@opencode-ai/plugin"
 import type { TmuxConfig } from "../../config/schema"
 import type { TrackedSession, CapacityConfig } from "./types"
 import {
-  isInsideTmux,
-  getCurrentPaneId,
+  isInsideTmux as defaultIsInsideTmux,
+  getCurrentPaneId as defaultGetCurrentPaneId,
   POLL_INTERVAL_BACKGROUND_MS,
   SESSION_MISSING_GRACE_MS,
   SESSION_READY_POLL_INTERVAL_MS,
@@ -13,7 +13,7 @@ import { log } from "../../shared"
 import { queryWindowState } from "./pane-state-querier"
 import { decideSpawnActions, decideCloseAction, type SessionMapping } from "./decision-engine"
 import { executeActions, executeAction } from "./action-executor"
-
+import { TmuxPollingManager } from "./polling-manager"
 type OpencodeClient = PluginInput["client"]
 
 interface SessionCreatedEvent {
@@ -21,17 +21,22 @@ interface SessionCreatedEvent {
   properties?: { info?: { id?: string; parentID?: string; title?: string } }
 }
 
-const SESSION_TIMEOUT_MS = 10 * 60 * 1000
-
-type TmuxRuntimeDeps = {
+export interface TmuxUtilDeps {
   isInsideTmux: () => boolean
   getCurrentPaneId: () => string | undefined
 }
 
-const DEFAULT_TMUX_RUNTIME_DEPS: TmuxRuntimeDeps = {
-  isInsideTmux,
-  getCurrentPaneId,
+const defaultTmuxDeps: TmuxUtilDeps = {
+  isInsideTmux: defaultIsInsideTmux,
+  getCurrentPaneId: defaultGetCurrentPaneId,
 }
+
+const SESSION_TIMEOUT_MS = 10 * 60 * 1000
+
+// Stability detection constants (prevents premature closure - see issue #1330)
+// Mirrors the proven pattern from background-agent/manager.ts
+const MIN_STABILITY_TIME_MS = 10 * 1000  // Must run at least 10s before stability detection kicks in
+const STABLE_POLLS_REQUIRED = 3          // 3 consecutive idle polls (~6s with 2s poll interval)
 
 /**
  * State-first Tmux Session Manager
@@ -50,19 +55,22 @@ export class TmuxSessionManager {
   private tmuxConfig: TmuxConfig
   private serverUrl: string
   private sourcePaneId: string | undefined
-  private tmuxDeps: TmuxRuntimeDeps
   private sessions = new Map<string, TrackedSession>()
   private pendingSessions = new Set<string>()
-  private pollInterval?: ReturnType<typeof setInterval>
-
-  constructor(ctx: PluginInput, tmuxConfig: TmuxConfig, deps: Partial<TmuxRuntimeDeps> = {}) {
+  private deps: TmuxUtilDeps
+  private pollingManager: TmuxPollingManager
+  constructor(ctx: PluginInput, tmuxConfig: TmuxConfig, deps: TmuxUtilDeps = defaultTmuxDeps) {
     this.client = ctx.client
     this.tmuxConfig = tmuxConfig
+    this.deps = deps
     const defaultPort = process.env.OPENCODE_PORT ?? "4096"
     this.serverUrl = ctx.serverUrl?.toString() ?? `http://localhost:${defaultPort}`
-    this.tmuxDeps = { ...DEFAULT_TMUX_RUNTIME_DEPS, ...deps }
-    this.sourcePaneId = this.tmuxDeps.getCurrentPaneId()
-
+    this.sourcePaneId = deps.getCurrentPaneId()
+    this.pollingManager = new TmuxPollingManager(
+      this.client,
+      this.sessions,
+      this.closeSessionById.bind(this)
+    )
     log("[tmux-session-manager] initialized", {
       configEnabled: this.tmuxConfig.enabled,
       tmuxConfig: this.tmuxConfig,
@@ -70,9 +78,8 @@ export class TmuxSessionManager {
       sourcePaneId: this.sourcePaneId,
     })
   }
-
   private isEnabled(): boolean {
-    return this.tmuxConfig.enabled && this.tmuxDeps.isInsideTmux()
+    return this.tmuxConfig.enabled && this.deps.isInsideTmux()
   }
 
   private getCapacityConfig(): CapacityConfig {
@@ -120,12 +127,18 @@ export class TmuxSessionManager {
     return false
   }
 
+  // NOTE: Exposed (via `as any`) for test stability checks.
+  // Actual polling is owned by TmuxPollingManager.
+  private async pollSessions(): Promise<void> {
+    await (this.pollingManager as any).pollSessions()
+  }
+
   async onSessionCreated(event: SessionCreatedEvent): Promise<void> {
     const enabled = this.isEnabled()
     log("[tmux-session-manager] onSessionCreated called", {
       enabled,
       tmuxConfigEnabled: this.tmuxConfig.enabled,
-      isInsideTmux: this.tmuxDeps.isInsideTmux(),
+      isInsideTmux: this.deps.isInsideTmux(),
       eventType: event.type,
       infoId: event.properties?.info?.id,
       infoParentID: event.properties?.info?.parentID,
@@ -212,6 +225,15 @@ export class TmuxSessionManager {
       }
 
       if (result.success && result.spawnedPaneId) {
+        const sessionReady = await this.waitForSessionReady(sessionId)
+        
+        if (!sessionReady) {
+          log("[tmux-session-manager] session not ready after timeout, tracking anyway", {
+            sessionId,
+            paneId: result.spawnedPaneId,
+          })
+        }
+        
         const now = Date.now()
         this.sessions.set(sessionId, {
           sessionId,
@@ -223,29 +245,9 @@ export class TmuxSessionManager {
         log("[tmux-session-manager] pane spawned and tracked", {
           sessionId,
           paneId: result.spawnedPaneId,
+          sessionReady,
         })
-        this.startPolling()
-
-        void this.waitForSessionReady(sessionId)
-          .then((sessionReady) => {
-            if (!sessionReady) {
-              log("[tmux-session-manager] session not ready after timeout", {
-                sessionId,
-                paneId: result.spawnedPaneId,
-              })
-              return
-            }
-            log("[tmux-session-manager] session ready after spawn", {
-              sessionId,
-              paneId: result.spawnedPaneId,
-            })
-          })
-          .catch((err) => {
-            log("[tmux-session-manager] session readiness check failed", {
-              sessionId,
-              error: String(err),
-            })
-          })
+        this.pollingManager.startPolling()
       } else {
         log("[tmux-session-manager] spawn failed", {
           success: result.success,
@@ -284,81 +286,10 @@ export class TmuxSessionManager {
     this.sessions.delete(event.sessionID)
 
     if (this.sessions.size === 0) {
-      this.stopPolling()
+      this.pollingManager.stopPolling()
     }
   }
 
-  private startPolling(): void {
-    if (this.pollInterval) return
-
-    this.pollInterval = setInterval(
-      () => this.pollSessions(),
-      POLL_INTERVAL_BACKGROUND_MS,
-    )
-    log("[tmux-session-manager] polling started")
-  }
-
-  private stopPolling(): void {
-    if (this.pollInterval) {
-      clearInterval(this.pollInterval)
-      this.pollInterval = undefined
-      log("[tmux-session-manager] polling stopped")
-    }
-  }
-
-  private async pollSessions(): Promise<void> {
-    if (this.sessions.size === 0) {
-      this.stopPolling()
-      return
-    }
-
-    try {
-      const statusResult = await this.client.session.status({ path: undefined })
-      const allStatuses = (statusResult.data ?? {}) as Record<string, { type: string }>
-
-      log("[tmux-session-manager] pollSessions", {
-        trackedSessions: Array.from(this.sessions.keys()),
-        allStatusKeys: Object.keys(allStatuses),
-      })
-
-      const now = Date.now()
-      const sessionsToClose: string[] = []
-
-      for (const [sessionId, tracked] of this.sessions.entries()) {
-        const status = allStatuses[sessionId]
-        const isIdle = status?.type === "idle"
-
-        if (status) {
-          tracked.lastSeenAt = new Date(now)
-        }
-
-        const missingSince = !status ? now - tracked.lastSeenAt.getTime() : 0
-        const missingTooLong = missingSince >= SESSION_MISSING_GRACE_MS
-        const isTimedOut = now - tracked.createdAt.getTime() > SESSION_TIMEOUT_MS
-
-        log("[tmux-session-manager] session check", {
-          sessionId,
-          statusType: status?.type,
-          isIdle,
-          missingSince,
-          missingTooLong,
-          isTimedOut,
-          shouldClose: isIdle || missingTooLong || isTimedOut,
-        })
-
-        if (isIdle || missingTooLong || isTimedOut) {
-          sessionsToClose.push(sessionId)
-        }
-      }
-
-      for (const sessionId of sessionsToClose) {
-        log("[tmux-session-manager] closing session due to poll", { sessionId })
-        await this.closeSessionById(sessionId)
-      }
-    } catch (err) {
-      log("[tmux-session-manager] poll error", { error: String(err) })
-    }
-  }
 
   private async closeSessionById(sessionId: string): Promise<void> {
     const tracked = this.sessions.get(sessionId)
@@ -380,7 +311,7 @@ export class TmuxSessionManager {
     this.sessions.delete(sessionId)
 
     if (this.sessions.size === 0) {
-      this.stopPolling()
+      this.pollingManager.stopPolling()
     }
   }
 
@@ -391,7 +322,7 @@ export class TmuxSessionManager {
   }
 
   async cleanup(): Promise<void> {
-    this.stopPolling()
+    this.pollingManager.stopPolling()
 
     if (this.sessions.size > 0) {
       log("[tmux-session-manager] closing all panes", { count: this.sessions.size })

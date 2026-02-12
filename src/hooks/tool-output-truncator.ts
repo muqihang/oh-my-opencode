@@ -46,6 +46,7 @@ export function createToolOutputTruncatorHook(ctx: PluginInput, options?: ToolOu
     output: { title: string; output: string; metadata: unknown }
   ) => {
     if (!truncateAll && !TRUNCATABLE_TOOLS.includes(input.tool)) return
+    if (typeof output.output !== 'string') return
 
     try {
       const raw = output.output

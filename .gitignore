@@ -1,5 +1,6 @@
 # Dependencies
-.sisyphus/
+.sisyphus/*
+!.sisyphus/rules/
 node_modules/
 
 # Git worktrees (local development)
@@ -37,3 +38,4 @@ test-injection/
 notepad.md
 oauth-success.html
 prompts-zh/
+*.bun-build

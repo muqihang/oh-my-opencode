@@ -1,4 +1,9 @@
 import type { CategoryConfig } from "../../config/schema"
+import type {
+   AvailableCategory,
+   AvailableSkill,
+ } from "../../agents/dynamic-agent-prompt-builder"
+import { truncateDescription } from "../../shared/truncate-description"
 
 export const VISUAL_CATEGORY_PROMPT_APPEND = `<Category_Context>
 You are working on VISUAL/UI tasks.
@@ -14,8 +19,14 @@ Design-first mindset:
 AVOID: Generic fonts, purple gradients on white, predictable layouts, cookie-cutter patterns.
 </Category_Context>`
 
-export const STRATEGIC_CATEGORY_PROMPT_APPEND = `<Category_Context>
-You are working on BUSINESS LOGIC / ARCHITECTURE tasks.
+export const ULTRABRAIN_CATEGORY_PROMPT_APPEND = `<Category_Context>
+You are working on DEEP LOGICAL REASONING / COMPLEX ARCHITECTURE tasks.
+
+**CRITICAL - CODE STYLE REQUIREMENTS (NON-NEGOTIABLE)**:
+1. BEFORE writing ANY code, SEARCH the existing codebase to find similar patterns/styles
+2. Your code MUST match the project's existing conventions - blend in seamlessly
+3. Write READABLE code that humans can easily understand - no clever tricks
+4. If unsure about style, explore more files until you find the pattern
 
 Strategic advisor mindset:
 - Bias toward simplicity: least complex solution that fulfills requirements
@@ -153,21 +164,54 @@ Approach:
 - Documentation, READMEs, articles, technical writing
 </Category_Context>`
 
+export const DEEP_CATEGORY_PROMPT_APPEND = `<Category_Context>
+You are working on GOAL-ORIENTED AUTONOMOUS tasks.
+
+**CRITICAL - AUTONOMOUS EXECUTION MINDSET (NON-NEGOTIABLE)**:
+You are NOT an interactive assistant. You are an autonomous problem-solver.
+
+**BEFORE making ANY changes**:
+1. SILENTLY explore the codebase extensively (5-15 minutes of reading is normal)
+2. Read related files, trace dependencies, understand the full context
+3. Build a complete mental model of the problem space
+4. DO NOT ask clarifying questions - the goal is already defined
+
+**Autonomous executor mindset**:
+- You receive a GOAL, not step-by-step instructions
+- Figure out HOW to achieve the goal yourself
+- Thorough research before any action
+- Fix hairy problems that require deep understanding
+- Work independently without frequent check-ins
+
+**Approach**:
+- Explore extensively, understand deeply, then act decisively
+- Prefer comprehensive solutions over quick patches
+- If the goal is unclear, make reasonable assumptions and proceed
+- Document your reasoning in code comments only when non-obvious
+
+**Response format**:
+- Minimal status updates (user trusts your autonomy)
+- Focus on results, not play-by-play progress
+- Report completion with summary of changes made
+</Category_Context>`
+
 
 
 export const DEFAULT_CATEGORIES: Record<string, CategoryConfig> = {
   "visual-engineering": { model: "google/gemini-3-pro" },
-  ultrabrain: { model: "openai/gpt-5.2-codex", variant: "xhigh" },
-  artistry: { model: "google/gemini-3-pro", variant: "max" },
+  ultrabrain: { model: "openai/gpt-5.3-codex", variant: "xhigh" },
+  deep: { model: "openai/gpt-5.3-codex", variant: "medium" },
+  artistry: { model: "google/gemini-3-pro", variant: "high" },
   quick: { model: "anthropic/claude-haiku-4-5" },
   "unspecified-low": { model: "anthropic/claude-sonnet-4-5" },
-  "unspecified-high": { model: "anthropic/claude-opus-4-5", variant: "max" },
+  "unspecified-high": { model: "anthropic/claude-opus-4-6", variant: "max" },
   writing: { model: "google/gemini-3-flash" },
 }
 
 export const CATEGORY_PROMPT_APPENDS: Record<string, string> = {
   "visual-engineering": VISUAL_CATEGORY_PROMPT_APPEND,
-  ultrabrain: STRATEGIC_CATEGORY_PROMPT_APPEND,
+  ultrabrain: ULTRABRAIN_CATEGORY_PROMPT_APPEND,
+  deep: DEEP_CATEGORY_PROMPT_APPEND,
   artistry: ARTISTRY_CATEGORY_PROMPT_APPEND,
   quick: QUICK_CATEGORY_PROMPT_APPEND,
   "unspecified-low": UNSPECIFIED_LOW_CATEGORY_PROMPT_APPEND,
@@ -177,8 +221,9 @@ export const CATEGORY_PROMPT_APPENDS: Record<string, string> = {
 
 export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   "visual-engineering": "Frontend, UI/UX, design, styling, animation",
-  ultrabrain: "Deep logical reasoning, complex architecture decisions requiring extensive analysis",
-  artistry: "Highly creative/artistic tasks, novel ideas",
+  ultrabrain: "Use ONLY for genuinely hard, logic-heavy tasks. Give clear goals only, not step-by-step instructions.",
+  deep: "Goal-oriented autonomous problem-solving. Thorough research before action. For hairy problems requiring deep understanding.",
+  artistry: "Complex problem-solving with unconventional, creative approaches - beyond standard patterns",
   quick: "Trivial tasks - single file changes, typo fixes, simple modifications",
   "unspecified-low": "Tasks that don't fit other categories, low effort required",
   "unspecified-high": "Tasks that don't fit other categories, high effort required",
@@ -191,7 +236,7 @@ export const CATEGORY_DESCRIPTIONS: Record<string, string> = {
  * then summarize user requirements and clarify uncertainties before proceeding.
  * Also MANDATES dependency graphs, parallel execution analysis, and category+skill recommendations.
  */
-export const PLAN_AGENT_SYSTEM_PREPEND = `<system>
+export const PLAN_AGENT_SYSTEM_PREPEND_STATIC_BEFORE_SKILLS = `<system>
 BEFORE you begin planning, you MUST first understand the user's request deeply.
 
 MANDATORY CONTEXT GATHERING PROTOCOL:
@@ -297,39 +342,9 @@ WHY THIS MATTERS:
 FOR EVERY TASK, YOU MUST RECOMMEND:
 1. Which CATEGORY to use for delegation
 2. Which SKILLS to load for the delegated agent
+`
 
-### AVAILABLE CATEGORIES
-
-| Category | Best For | Model |
-|----------|----------|-------|
-| \`visual-engineering\` | Frontend, UI/UX, design, styling, animation | google/gemini-3-pro |
-| \`ultrabrain\` | Complex architecture, deep logical reasoning | openai/gpt-5.2-codex |
-| \`artistry\` | Highly creative/artistic tasks, novel ideas | google/gemini-3-pro |
-| \`quick\` | Trivial tasks - single file, typo fixes | anthropic/claude-haiku-4-5 |
-| \`unspecified-low\` | Moderate effort, doesn't fit other categories | anthropic/claude-sonnet-4-5 |
-| \`unspecified-high\` | High effort, doesn't fit other categories | anthropic/claude-opus-4-5 |
-| \`writing\` | Documentation, prose, technical writing | google/gemini-3-flash |
-
-### AVAILABLE SKILLS (ALWAYS EVALUATE ALL)
-
-Skills inject specialized expertise into the delegated agent.
-YOU MUST evaluate EVERY skill and justify inclusions/omissions.
-
-| Skill | Domain |
-|-------|--------|
-| \`agent-browser\` | Browser automation, web testing |
-| \`frontend-ui-ux\` | Stunning UI/UX design |
-| \`git-master\` | Atomic commits, git operations |
-| \`dev-browser\` | Persistent browser state automation |
-| \`typescript-programmer\` | Production TypeScript code |
-| \`python-programmer\` | Production Python code |
-| \`svelte-programmer\` | Svelte components |
-| \`golang-tui-programmer\` | Go TUI with Charmbracelet |
-| \`python-debugger\` | Interactive Python debugging |
-| \`data-scientist\` | DuckDB/Polars data processing |
-| \`prompt-engineer\` | AI prompt optimization |
-
-### REQUIRED OUTPUT FORMAT
+export const PLAN_AGENT_SYSTEM_PREPEND_STATIC_AFTER_SKILLS = `### REQUIRED OUTPUT FORMAT
 
 For EACH task, include a recommendation block:
 
@@ -399,18 +414,134 @@ YOUR PLAN OUTPUT MUST FOLLOW THIS EXACT STRUCTURE:
 #####################################################################
 </CRITICAL_REQUIREMENT_DEPENDENCY_PARALLEL_EXECUTION_CATEGORY_SKILLS>
 
+<FINAL_OUTPUT_FOR_CALLER>
+═══════════════════════════════════════════════════════════════════
+█ SECTION 4: ACTIONABLE TODO LIST FOR CALLER (MANDATORY)          █
+═══════════════════════════════════════════════════════════════════
+
+YOU MUST END YOUR RESPONSE WITH THIS SECTION.
+
+\`\`\`markdown
+## TODO List (ADD THESE)
+
+> CALLER: Add these TODOs using TodoWrite/TaskCreate and execute by wave.
+
+### Wave 1 (Start Immediately - No Dependencies)
+
+- [ ] **1. [Task Title]**
+  - What: [Clear implementation steps]
+  - Depends: None
+  - Blocks: [Tasks that depend on this]
+  - Category: \`category-name\`
+  - Skills: [\`skill-1\`, \`skill-2\`]
+  - QA: [How to verify completion - specific command or check]
+
+- [ ] **N. [Task Title]**
+  - What: [Steps]
+  - Depends: None
+  - Blocks: [...]
+  - Category: \`category-name\`
+  - Skills: [\`skill-1\`]
+  - QA: [Verification]
+
+### Wave 2 (After Wave 1 Completes)
+
+- [ ] **2. [Task Title]**
+  - What: [Steps]
+  - Depends: 1
+  - Blocks: [4]
+  - Category: \`category-name\`
+  - Skills: [\`skill-1\`]
+  - QA: [Verification]
+
+[Continue for all waves...]
+
+## Execution Instructions
+
+1. **Wave 1**: Fire these tasks IN PARALLEL (no dependencies)
+   \`\`\`
+   task(category="...", load_skills=[...], run_in_background=false, prompt="Task 1: ...")
+   task(category="...", load_skills=[...], run_in_background=false, prompt="Task N: ...")
+   \`\`\`
+
+2. **Wave 2**: After Wave 1 completes, fire next wave IN PARALLEL
+   \`\`\`
+   task(category="...", load_skills=[...], run_in_background=false, prompt="Task 2: ...")
+   \`\`\`
+
+3. Continue until all waves complete
+
+4. Final QA: Verify all tasks pass their QA criteria
+\`\`\`
+
+WHY THIS FORMAT IS MANDATORY:
+- Caller can directly copy TODO items
+- Wave grouping enables parallel execution
+- Each task has clear task parameters
+- QA criteria ensure verifiable completion
+</FINAL_OUTPUT_FOR_CALLER>
+
 `
 
-/**
- * List of agent names that should be treated as plan agents.
- * Case-insensitive matching is used.
- */
-export const PLAN_AGENT_NAMES = ["plan", "prometheus", "planner"]
+function renderPlanAgentCategoryRows(categories: AvailableCategory[]): string[] {
+  const sorted = [...categories].sort((a, b) => a.name.localeCompare(b.name))
+  return sorted.map((category) => {
+    const bestFor = category.description || category.name
+    const model = category.model || ""
+    return `| \`${category.name}\` | ${bestFor} | ${model} |`
+  })
+}
+
+function renderPlanAgentSkillRows(skills: AvailableSkill[]): string[] {
+   const sorted = [...skills].sort((a, b) => a.name.localeCompare(b.name))
+   return sorted.map((skill) => {
+     const domain = truncateDescription(skill.description).trim() || skill.name
+     return `| \`${skill.name}\` | ${domain} |`
+   })
+ }
+
+export function buildPlanAgentSkillsSection(
+  categories: AvailableCategory[] = [],
+  skills: AvailableSkill[] = []
+): string {
+  const categoryRows = renderPlanAgentCategoryRows(categories)
+  const skillRows = renderPlanAgentSkillRows(skills)
+
+  return `### AVAILABLE CATEGORIES
+
+| Category | Best For | Model |
+|----------|----------|-------|
+${categoryRows.join("\n")}
+
+### AVAILABLE SKILLS (ALWAYS EVALUATE ALL)
+
+Skills inject specialized expertise into the delegated agent.
+YOU MUST evaluate EVERY skill and justify inclusions/omissions.
+
+| Skill | Domain |
+|-------|--------|
+${skillRows.join("\n")}`
+}
+
+export function buildPlanAgentSystemPrepend(
+  categories: AvailableCategory[] = [],
+  skills: AvailableSkill[] = []
+): string {
+  return [
+    PLAN_AGENT_SYSTEM_PREPEND_STATIC_BEFORE_SKILLS,
+    buildPlanAgentSkillsSection(categories, skills),
+    PLAN_AGENT_SYSTEM_PREPEND_STATIC_AFTER_SKILLS,
+  ].join("\n\n")
+}
 
 /**
- * Check if the given agent name is a plan agent.
- * @param agentName - The agent name to check
- * @returns true if the agent is a plan agent
+ * List of agent names that should be treated as plan agents (receive plan system prompt).
+ * Case-insensitive matching is used.
+ */
+export const PLAN_AGENT_NAMES = ["plan"]
+
+/**
+ * Check if the given agent name is a plan agent (receives plan system prompt).
  */
 export function isPlanAgent(agentName: string | undefined): boolean {
   if (!agentName) return false
@@ -418,4 +549,21 @@ export function isPlanAgent(agentName: string | undefined): boolean {
   return PLAN_AGENT_NAMES.some(name => lowerName === name || lowerName.includes(name))
 }
 
+/**
+ * Plan family: plan + prometheus. Shares mutual delegation blocking and task tool permission.
+ * Does NOT share system prompt (only isPlanAgent controls that).
+ */
+export const PLAN_FAMILY_NAMES = ["plan", "prometheus"]
 
+/**
+ * Check if the given agent belongs to the plan family (blocking + task permission).
+ */
+export function isPlanFamily(category: string): boolean
+export function isPlanFamily(category: string | undefined): boolean
+export function isPlanFamily(category: string | undefined): boolean {
+  if (!category) return false
+  const lowerCategory = category.toLowerCase().trim()
+  return PLAN_FAMILY_NAMES.some(
+    (name) => lowerCategory === name || lowerCategory.includes(name)
+  )
+}

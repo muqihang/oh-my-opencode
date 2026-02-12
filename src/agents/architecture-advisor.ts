@@ -1,8 +1,9 @@
 import type { AgentConfig } from "@opencode-ai/sdk";
-import type { AgentPromptMetadata } from "./types";
+import type { AgentMode, AgentPromptMetadata } from "./types";
 import { createAgentToolRestrictions } from "../shared/permission-compat";
 
 const DEFAULT_MODEL = "anthropic/claude-sonnet-4-5";
+const MODE: AgentMode = "subagent";
 
 export const ARCHITECTURE_ADVISOR_PROMPT_METADATA: AgentPromptMetadata = {
   category: "specialist",
@@ -141,6 +142,8 @@ export function createArchitectureAdvisorAgent(
     prompt: ARCHITECTURE_ADVISOR_PROMPT,
   } as AgentConfig;
 }
+
+createArchitectureAdvisorAgent.mode = MODE;
 
 export const architectureAdvisorAgent: AgentConfig =
   createArchitectureAdvisorAgent();

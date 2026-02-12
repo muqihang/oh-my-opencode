@@ -26,7 +26,7 @@ interface RawClaudeHooksConfig {
 function normalizeHookMatcher(raw: RawHookMatcher): HookMatcher {
   return {
     matcher: raw.matcher ?? raw.pattern ?? "*",
-    hooks: raw.hooks,
+    hooks: Array.isArray(raw.hooks) ? raw.hooks : [],
   }
 }
 
@@ -63,7 +63,9 @@ export function getClaudeSettingsPaths(options: LoadClaudeHooksConfigOptions = {
     paths.unshift(customPath)
   }
 
-  return paths
+  // Deduplicate paths to prevent loading the same file multiple times
+  // (e.g., when cwd is the home directory)
+  return [...new Set(paths)]
 }
 
 function mergeHooksConfig(

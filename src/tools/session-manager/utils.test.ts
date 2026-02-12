@@ -6,34 +6,34 @@ import {
   formatSearchResults,
   filterSessionsByDate,
   searchInSession,
-} from "./utils"
+} from "./session-formatter"
 import type { SessionInfo, SessionMessage, SearchResult } from "./types"
 
 describe("session-manager utils", () => {
   test("formatSessionList handles empty array", async () => {
-    // #given
+    // given
     const sessions: string[] = []
 
-    // #when
+    // when
     const result = await formatSessionList(sessions)
 
-    // #then
-    expect(result).toContain("未找到会话")
+    // then
+    expect(result).toMatch(/No sessions found|未找到会话/)
   })
 
   test("formatSessionMessages handles empty array", () => {
-    // #given
+    // given
     const messages: SessionMessage[] = []
 
-    // #when
+    // when
     const result = formatSessionMessages(messages)
 
-    // #then
-    expect(result).toContain("未找到消息")
+    // then
+    expect(result).toMatch(/No messages|未找到消息/)
   })
 
   test("formatSessionMessages includes message content", () => {
-    // #given
+    // given
     const messages: SessionMessage[] = [
       {
         id: "msg_001",
@@ -43,16 +43,16 @@ describe("session-manager utils", () => {
       },
     ]
 
-    // #when
+    // when
     const result = formatSessionMessages(messages)
 
-    // #then
+    // then
     expect(result).toContain("user")
     expect(result).toContain("Hello world")
   })
 
   test("formatSessionMessages includes todos when requested", () => {
-    // #given
+    // given
     const messages: SessionMessage[] = [
       {
         id: "msg_001",
@@ -66,17 +66,17 @@ describe("session-manager utils", () => {
       { id: "2", content: "Task 2", status: "pending" as const },
     ]
 
-    // #when
+    // when
     const result = formatSessionMessages(messages, true, todos)
 
-    // #then
+    // then
     expect(result).toContain("TODO")
     expect(result).toContain("Task 1")
     expect(result).toContain("Task 2")
   })
 
   test("formatSessionInfo includes all metadata", () => {
-    // #given
+    // given
     const info: SessionInfo = {
       id: "ses_test123",
       message_count: 42,
@@ -89,29 +89,29 @@ describe("session-manager utils", () => {
       transcript_entries: 123,
     }
 
-    // #when
+    // when
     const result = formatSessionInfo(info)
 
-    // #then
+    // then
     expect(result).toContain("ses_test123")
     expect(result).toContain("42")
     expect(result).toContain("build, oracle")
-    expect(result).toContain("耗时")
+    expect(result).toMatch(/Duration|耗时/)
   })
 
   test("formatSearchResults handles empty array", () => {
-    // #given
+    // given
     const results: SearchResult[] = []
 
-    // #when
+    // when
     const result = formatSearchResults(results)
 
-    // #then
-    expect(result).toContain("未找到匹配")
+    // then
+    expect(result).toMatch(/No matches|未找到匹配项/)
   })
 
   test("formatSearchResults formats matches correctly", () => {
-    // #given
+    // given
     const results: SearchResult[] = [
       {
         session_id: "ses_test123",
@@ -123,37 +123,37 @@ describe("session-manager utils", () => {
       },
     ]
 
-    // #when
+    // when
     const result = formatSearchResults(results)
 
-    // #then
-    expect(result).toContain("找到 1 条匹配")
+    // then
+    expect(result).toMatch(/Found 1 matches|找到\s*1\s*条匹配/)
     expect(result).toContain("ses_test123")
     expect(result).toContain("msg_001")
     expect(result).toContain("example text")
-    expect(result).toContain("匹配次数：3")
+    expect(result).toMatch(/Matches:\s*3|匹配次数：3/)
   })
 
   test("filterSessionsByDate filters correctly", async () => {
-    // #given
+    // given
     const sessionIDs = ["ses_001", "ses_002", "ses_003"]
 
-    // #when
+    // when
     const result = await filterSessionsByDate(sessionIDs)
 
-    // #then
+    // then
     expect(Array.isArray(result)).toBe(true)
   })
 
   test("searchInSession finds matches case-insensitively", async () => {
-    // #given
+    // given
     const sessionID = "ses_nonexistent"
     const query = "test"
 
-    // #when
+    // when
     const results = await searchInSession(sessionID, query, false)
 
-    // #then
+    // then
     expect(Array.isArray(results)).toBe(true)
     expect(results.length).toBe(0)
   })

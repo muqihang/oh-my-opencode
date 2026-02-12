@@ -1,6 +1,7 @@
 import type { ContextCollector } from "./collector"
 import type { Message, Part } from "@opencode-ai/sdk"
 import { log } from "../../shared"
+import { getMainSessionID } from "../claude-code-session-state"
 import { pointerize } from "./pointerize"
 import type { ExperimentalConfig } from "../../config/schema"
 
@@ -114,11 +115,12 @@ export function createContextInjectorMessagesTransformHook(
       }
 
       const lastUserMessage = messages[lastUserMessageIndex]
-      // Only trust message.info.sessionID; do not fallback to main session.
+      // Try message.info.sessionID first, fallback to mainSessionID
       const messageSessionID = (lastUserMessage.info as unknown as { sessionID?: string }).sessionID
-      const sessionID = typeof messageSessionID === "string" ? messageSessionID.trim() : ""
+      const sessionID = messageSessionID ?? getMainSessionID()
       log("[DEBUG] Extracted sessionID", {
         messageSessionID,
+        mainSessionID: getMainSessionID(),
         sessionID,
         infoKeys: Object.keys(lastUserMessage.info),
       })
@@ -163,7 +165,7 @@ export function createContextInjectorMessagesTransformHook(
         return
       }
 
-      // synthetic part 패턴 (minimal fields)
+      // synthetic part pattern (minimal fields)
       const syntheticPart = {
         id: `synthetic_hook_${Date.now()}`,
         messageID: lastUserMessage.info.id,

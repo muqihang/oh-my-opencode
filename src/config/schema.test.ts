@@ -5,20 +5,23 @@ import {
   BrowserAutomationProviderSchema,
   BuiltinCategoryNameSchema,
   CategoryConfigSchema,
+  ExperimentalConfigSchema,
+  GitMasterConfigSchema,
   OhMyOpenCodeConfigSchema,
+  SisyphusConfigSchema,
 } from "./schema"
 
 describe("disabled_mcps schema", () => {
   test("should accept built-in MCP names", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: ["context7", "grep_app"],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toEqual(["context7", "grep_app"])
@@ -26,15 +29,15 @@ describe("disabled_mcps schema", () => {
   })
 
   test("should accept custom MCP names", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: ["playwright", "sqlite", "custom-mcp"],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toEqual(["playwright", "sqlite", "custom-mcp"])
@@ -42,15 +45,15 @@ describe("disabled_mcps schema", () => {
   })
 
   test("should accept mixed built-in and custom names", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: ["context7", "playwright", "custom-server"],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toEqual(["context7", "playwright", "custom-server"])
@@ -58,15 +61,15 @@ describe("disabled_mcps schema", () => {
   })
 
   test("should accept empty array", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: [],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toEqual([])
@@ -74,26 +77,26 @@ describe("disabled_mcps schema", () => {
   })
 
   test("should reject non-string values", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: [123, true, null],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(false)
   })
 
   test("should accept undefined (optional field)", () => {
-    //#given
+    // given
     const config = {}
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toBeUndefined()
@@ -101,20 +104,20 @@ describe("disabled_mcps schema", () => {
   })
 
   test("should reject empty strings", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: [""],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(false)
   })
 
   test("should accept MCP names with various naming patterns", () => {
-    //#given
+    // given
     const config = {
       disabled_mcps: [
         "my-custom-mcp",
@@ -125,10 +128,10 @@ describe("disabled_mcps schema", () => {
       ],
     }
 
-    //#when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    //#then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.disabled_mcps).toEqual([
@@ -145,13 +148,13 @@ describe("disabled_mcps schema", () => {
 describe("AgentOverrideConfigSchema", () => {
   describe("category field", () => {
     test("accepts category as optional string", () => {
-      // #given
+      // given
       const config = { category: "visual-engineering" }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.category).toBe("visual-engineering")
@@ -159,37 +162,37 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("accepts config without category", () => {
-      // #given
+      // given
       const config = { temperature: 0.5 }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
     })
 
     test("rejects non-string category", () => {
-      // #given
+      // given
       const config = { category: 123 }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(false)
     })
   })
 
   describe("variant field", () => {
     test("accepts variant as optional string", () => {
-      // #given
+      // given
       const config = { variant: "high" }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.variant).toBe("high")
@@ -197,26 +200,26 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("rejects non-string variant", () => {
-      // #given
+      // given
       const config = { variant: 123 }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(false)
     })
   })
 
   describe("skills field", () => {
     test("accepts skills as optional string array", () => {
-      // #given
+      // given
       const config = { skills: ["frontend-ui-ux", "code-reviewer"] }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.skills).toEqual(["frontend-ui-ux", "code-reviewer"])
@@ -224,13 +227,13 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("accepts empty skills array", () => {
-      // #given
+      // given
       const config = { skills: [] }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.skills).toEqual([])
@@ -238,37 +241,37 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("accepts config without skills", () => {
-      // #given
+      // given
       const config = { temperature: 0.5 }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
     })
 
     test("rejects non-array skills", () => {
-      // #given
+      // given
       const config = { skills: "frontend-ui-ux" }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(false)
     })
   })
 
   describe("backward compatibility", () => {
     test("still accepts model field (deprecated)", () => {
-      // #given
+      // given
       const config = { model: "openai/gpt-5.2" }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.model).toBe("openai/gpt-5.2")
@@ -276,16 +279,16 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("accepts both model and category (deprecated usage)", () => {
-      // #given - category should take precedence at runtime, but both should validate
+      // given - category should take precedence at runtime, but both should validate
       const config = { 
         model: "openai/gpt-5.2",
         category: "ultrabrain"
       }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.model).toBe("openai/gpt-5.2")
@@ -296,16 +299,16 @@ describe("AgentOverrideConfigSchema", () => {
 
   describe("combined fields", () => {
     test("accepts category with skills", () => {
-      // #given
+      // given
       const config = { 
         category: "visual-engineering",
         skills: ["frontend-ui-ux"]
       }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.category).toBe("visual-engineering")
@@ -314,7 +317,7 @@ describe("AgentOverrideConfigSchema", () => {
     })
 
     test("accepts category with skills and other fields", () => {
-      // #given
+      // given
       const config = { 
         category: "ultrabrain",
         skills: ["code-reviewer"],
@@ -322,10 +325,10 @@ describe("AgentOverrideConfigSchema", () => {
         prompt_append: "Extra instructions"
       }
 
-      // #when
+      // when
       const result = AgentOverrideConfigSchema.safeParse(config)
 
-      // #then
+      // then
       expect(result.success).toBe(true)
       if (result.success) {
         expect(result.data.category).toBe("ultrabrain")
@@ -339,13 +342,13 @@ describe("AgentOverrideConfigSchema", () => {
 
 describe("CategoryConfigSchema", () => {
   test("accepts variant as optional string", () => {
-    // #given
+    // given
     const config = { model: "openai/gpt-5.2", variant: "xhigh" }
 
-    // #when
+    // when
     const result = CategoryConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.variant).toBe("xhigh")
@@ -353,13 +356,13 @@ describe("CategoryConfigSchema", () => {
   })
 
   test("accepts reasoningEffort as optional string with xhigh", () => {
-    // #given
+    // given
     const config = { reasoningEffort: "xhigh" }
 
-    // #when
+    // when
     const result = CategoryConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.reasoningEffort).toBe("xhigh")
@@ -367,23 +370,23 @@ describe("CategoryConfigSchema", () => {
   })
 
   test("rejects non-string variant", () => {
-    // #given
+    // given
     const config = { model: "openai/gpt-5.2", variant: 123 }
 
-    // #when
+    // when
     const result = CategoryConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(false)
   })
 })
 
 describe("BuiltinCategoryNameSchema", () => {
   test("accepts all builtin category names", () => {
-    // #given
+    // given
     const categories = ["visual-engineering", "ultrabrain", "artistry", "quick", "unspecified-low", "unspecified-high", "writing"]
 
-    // #when / #then
+    // when / #then
     for (const cat of categories) {
       const result = BuiltinCategoryNameSchema.safeParse(cat)
       expect(result.success).toBe(true)
@@ -393,7 +396,7 @@ describe("BuiltinCategoryNameSchema", () => {
 
 describe("Sisyphus-Junior agent override", () => {
   test("schema accepts agents['Sisyphus-Junior'] and retains the key after parsing", () => {
-    // #given
+    // given
     const config = {
       agents: {
         "sisyphus-junior": {
@@ -403,10 +406,10 @@ describe("Sisyphus-Junior agent override", () => {
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agents?.["sisyphus-junior"]).toBeDefined()
@@ -416,7 +419,7 @@ describe("Sisyphus-Junior agent override", () => {
   })
 
   test("schema accepts sisyphus-junior with prompt_append", () => {
-    // #given
+    // given
     const config = {
       agents: {
         "sisyphus-junior": {
@@ -425,10 +428,10 @@ describe("Sisyphus-Junior agent override", () => {
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agents?.["sisyphus-junior"]?.prompt_append).toBe(
@@ -438,7 +441,7 @@ describe("Sisyphus-Junior agent override", () => {
   })
 
   test("schema accepts sisyphus-junior with tools override", () => {
-    // #given
+    // given
     const config = {
       agents: {
         "sisyphus-junior": {
@@ -450,10 +453,10 @@ describe("Sisyphus-Junior agent override", () => {
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agents?.["sisyphus-junior"]?.tools).toEqual({
@@ -464,7 +467,7 @@ describe("Sisyphus-Junior agent override", () => {
   })
 
   test("schema accepts lowercase agent names (sisyphus, atlas, prometheus)", () => {
-    // #given
+    // given
     const config = {
       agents: {
         sisyphus: {
@@ -479,10 +482,10 @@ describe("Sisyphus-Junior agent override", () => {
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agents?.sisyphus?.temperature).toBe(0.1)
@@ -492,7 +495,7 @@ describe("Sisyphus-Junior agent override", () => {
   })
 
   test("schema accepts lowercase metis and momus agent names", () => {
-    // #given
+    // given
     const config = {
       agents: {
         metis: {
@@ -504,10 +507,10 @@ describe("Sisyphus-Junior agent override", () => {
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(config)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     if (result.success) {
       expect(result.data.agents?.metis?.category).toBe("ultrabrain")
@@ -518,326 +521,288 @@ describe("Sisyphus-Junior agent override", () => {
 
 describe("BrowserAutomationProviderSchema", () => {
   test("accepts 'playwright' as valid provider", () => {
-    // #given
+    // given
     const input = "playwright"
 
-    // #when
+    // when
     const result = BrowserAutomationProviderSchema.safeParse(input)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     expect(result.data).toBe("playwright")
   })
 
   test("accepts 'agent-browser' as valid provider", () => {
-    // #given
+    // given
     const input = "agent-browser"
 
-    // #when
+    // when
     const result = BrowserAutomationProviderSchema.safeParse(input)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     expect(result.data).toBe("agent-browser")
   })
 
   test("rejects invalid provider", () => {
-    // #given
+    // given
     const input = "invalid-provider"
 
-    // #when
+    // when
     const result = BrowserAutomationProviderSchema.safeParse(input)
 
-    // #then
+    // then
     expect(result.success).toBe(false)
   })
 })
 
 describe("BrowserAutomationConfigSchema", () => {
   test("defaults provider to 'playwright' when not specified", () => {
-    // #given
+    // given
     const input = {}
 
-    // #when
+    // when
     const result = BrowserAutomationConfigSchema.parse(input)
 
-    // #then
+    // then
     expect(result.provider).toBe("playwright")
   })
 
   test("accepts agent-browser provider", () => {
-    // #given
+    // given
     const input = { provider: "agent-browser" }
 
-    // #when
+    // when
     const result = BrowserAutomationConfigSchema.parse(input)
 
-    // #then
+    // then
     expect(result.provider).toBe("agent-browser")
   })
 })
 
 describe("OhMyOpenCodeConfigSchema - browser_automation_engine", () => {
   test("accepts browser_automation_engine config", () => {
-    // #given
+    // given
     const input = {
       browser_automation_engine: {
         provider: "agent-browser",
       },
     }
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(input)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     expect(result.data?.browser_automation_engine?.provider).toBe("agent-browser")
   })
 
   test("accepts config without browser_automation_engine", () => {
-    // #given
+    // given
     const input = {}
 
-    // #when
+    // when
     const result = OhMyOpenCodeConfigSchema.safeParse(input)
 
-    // #then
+    // then
     expect(result.success).toBe(true)
     expect(result.data?.browser_automation_engine).toBeUndefined()
   })
 })
 
-describe("OhMyOpenCodeConfigSchema - experimental.opencode_orchestrator_compat", () => {
-  test("accepts experimental orchestrator compat config", () => {
-    // #given
-    const input = {
-      experimental: {
-        opencode_orchestrator_compat: {
-          enabled: true,
-        },
-      },
-    }
-
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // #then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.experimental).toEqual({
-        opencode_orchestrator_compat: {
-          enabled: true,
-        },
-      })
-    }
-  })
-
-  test("strips unknown keys inside experimental orchestrator compat config (strict behavior)", () => {
-    // #given
-    const input = {
-      experimental: {
-        opencode_orchestrator_compat: {
-          enabled: true,
-          unknown_key: "ignored",
-        },
-      },
-    }
-
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // #then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.experimental).toEqual({
-        opencode_orchestrator_compat: {
-          enabled: true,
-        },
-      })
-    }
-  })
-})
-
-describe("OhMyOpenCodeConfigSchema - experimental.opencode_base_artifacts_bridge", () => {
-  test("accepts experimental base artifacts bridge config", () => {
-    //#given - config with base artifacts bridge enabled
-    const input = {
-      experimental: { opencode_base_artifacts_bridge: { enabled: true } },
-    }
-
-    //#when - parse schema
-    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    //#then - should succeed and keep enabled=true
-    expect(parsed.success).toBe(true)
-    if (parsed.success) {
-      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.enabled).toBe(true)
-    }
-  })
-
-  test("write_json defaults to false", () => {
+describe("ExperimentalConfigSchema feature flags", () => {
+  test("accepts plugin_load_timeout_ms as number", () => {
     //#given
-    const input = {
-      experimental: { opencode_base_artifacts_bridge: { enabled: true } },
-    }
+    const config = { plugin_load_timeout_ms: 5000 }
 
     //#when
-    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+    const result = ExperimentalConfigSchema.safeParse(config)
 
     //#then
-    expect(parsed.success).toBe(true)
-    if (parsed.success) {
-      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.write_json).toBe(false)
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.plugin_load_timeout_ms).toBe(5000)
     }
   })
 
-  test("accepts allowlist override for base artifacts bridge", () => {
+  test("rejects plugin_load_timeout_ms below 1000", () => {
     //#given
-    const input = {
-      experimental: {
-        opencode_base_artifacts_bridge: {
-          enabled: true,
-          allowlist: ["orchestrator-plan", "retrieval-hits"],
-        },
+    const config = { plugin_load_timeout_ms: 500 }
+
+    //#when
+    const result = ExperimentalConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(false)
+  })
+
+  test("accepts safe_hook_creation as boolean", () => {
+    //#given
+    const config = { safe_hook_creation: false }
+
+    //#when
+    const result = ExperimentalConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.safe_hook_creation).toBe(false)
+    }
+  })
+
+  test("accepts context_capsules settings", () => {
+    //#given
+    const config = {
+      context_capsules: {
+        dir: ".opencode/context-capsules",
+        preserve_truncated_tool_output: true,
       },
     }
 
     //#when
-    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+    const result = ExperimentalConfigSchema.safeParse(config)
 
     //#then
-    expect(parsed.success).toBe(true)
-    if (parsed.success) {
-      expect(parsed.data.experimental?.opencode_base_artifacts_bridge?.allowlist).toEqual([
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.context_capsules?.dir).toBe(".opencode/context-capsules")
+      expect(result.data.context_capsules?.preserve_truncated_tool_output).toBe(true)
+    }
+  })
+
+  test("accepts opencode_base_artifacts_bridge settings", () => {
+    //#given
+    const config = {
+      opencode_base_artifacts_bridge: {
+        enabled: true,
+        inject_to_delegate_task: false,
+        verbose: true,
+        write_json: true,
+        allowlist: ["orchestrator-plan", "retrieval-hits"],
+      },
+    }
+
+    //#when
+    const result = ExperimentalConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.opencode_base_artifacts_bridge?.enabled).toBe(true)
+      expect(result.data.opencode_base_artifacts_bridge?.verbose).toBe(true)
+      expect(result.data.opencode_base_artifacts_bridge?.write_json).toBe(true)
+      expect(result.data.opencode_base_artifacts_bridge?.allowlist).toEqual([
         "orchestrator-plan",
         "retrieval-hits",
       ])
     }
   })
 
-  test("accepts inject_to_delegate_task and verbose flags", () => {
+  test("both fields are optional", () => {
     //#given
-    const input = {
-      experimental: {
-        opencode_base_artifacts_bridge: {
-          enabled: true,
-          inject_to_delegate_task: true,
-          verbose: true,
-        },
+    const config = {}
+
+    //#when
+    const result = ExperimentalConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.plugin_load_timeout_ms).toBeUndefined()
+      expect(result.data.safe_hook_creation).toBeUndefined()
+    }
+  })
+})
+
+describe("SisyphusConfigSchema", () => {
+  test("accepts swarm storage config", () => {
+    //#given
+    const config = {
+      swarm: {
+        storage_path: ".sisyphus/teams",
+        enabled: true,
+        ui_mode: "toast" as const,
       },
     }
 
     //#when
-    const parsed = OhMyOpenCodeConfigSchema.safeParse(input)
+    const result = SisyphusConfigSchema.safeParse(config)
 
     //#then
-    expect(parsed.success).toBe(true)
-    if (parsed.success) {
-      expect(parsed.data.experimental?.opencode_base_artifacts_bridge).toMatchObject({
-        enabled: true,
-        inject_to_delegate_task: true,
-        verbose: true,
-      })
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.swarm?.storage_path).toBe(".sisyphus/teams")
+      expect(result.data.swarm?.enabled).toBe(true)
+      expect(result.data.swarm?.ui_mode).toBe("toast")
     }
   })
 })
 
-describe("OhMyOpenCodeConfigSchema - experimental.context_capsules", () => {
-  test("accepts experimental context capsules config override", () => {
-    // #given
-    const input = {
-      experimental: {
-        context_capsules: {
-          dir: ".sisyphus/context-capsules",
-          preserve_truncated_tool_output: true,
-        },
-      },
-    }
+describe("GitMasterConfigSchema", () => {
+  test("accepts boolean true for commit_footer", () => {
+    //#given
+    const config = { commit_footer: true }
 
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+    //#when
+    const result = GitMasterConfigSchema.safeParse(config)
 
-    // #then
+    //#then
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.experimental?.context_capsules).toEqual({
-        dir: ".sisyphus/context-capsules",
-        preserve_truncated_tool_output: true,
-      })
+      expect(result.data.commit_footer).toBe(true)
     }
   })
 
-  test("defaults dir and preserve_truncated_tool_output when object provided", () => {
-    // #given
-    const input = {
-      experimental: {
-        context_capsules: {},
-      },
-    }
+  test("accepts boolean false for commit_footer", () => {
+    //#given
+    const config = { commit_footer: false }
 
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+    //#when
+    const result = GitMasterConfigSchema.safeParse(config)
 
-    // #then
+    //#then
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.experimental?.context_capsules).toEqual({
-        dir: ".opencode/context-capsules",
-        preserve_truncated_tool_output: false,
-      })
-    }
-  })
-})
-
-describe("OhMyOpenCodeConfigSchema - experimental.atlas_journal", () => {
-  test("accepts experimental atlas journal config override", () => {
-    // #given
-    const input = {
-      experimental: {
-        atlas_journal: {
-          enabled: true,
-          short_reminder: false,
-          path_mode: "global",
-          verbose: true,
-        },
-      },
-    }
-
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
-
-    // #then
-    expect(result.success).toBe(true)
-    if (result.success) {
-      expect(result.data.experimental?.atlas_journal).toEqual({
-        enabled: true,
-        short_reminder: false,
-        path_mode: "global",
-        verbose: true,
-      })
+      expect(result.data.commit_footer).toBe(false)
     }
   })
 
-  test("defaults atlas journal fields when object provided", () => {
-    // #given
-    const input = {
-      experimental: {
-        atlas_journal: {},
-      },
-    }
+  test("accepts string value for commit_footer", () => {
+    //#given
+    const config = { commit_footer: "Custom footer text" }
 
-    // #when
-    const result = OhMyOpenCodeConfigSchema.safeParse(input)
+    //#when
+    const result = GitMasterConfigSchema.safeParse(config)
 
-    // #then
+    //#then
     expect(result.success).toBe(true)
     if (result.success) {
-      expect(result.data.experimental?.atlas_journal).toEqual({
-        enabled: false,
-        short_reminder: true,
-        path_mode: "plan-notepad",
-        verbose: false,
-      })
+      expect(result.data.commit_footer).toBe("Custom footer text")
     }
+  })
+
+  test("defaults commit_footer to true when not provided", () => {
+    //#given
+    const config = {}
+
+    //#when
+    const result = GitMasterConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(true)
+    if (result.success) {
+      expect(result.data.commit_footer).toBe(true)
+    }
+  })
+
+  test("rejects number for commit_footer", () => {
+    //#given
+    const config = { commit_footer: 123 }
+
+    //#when
+    const result = GitMasterConfigSchema.safeParse(config)
+
+    //#then
+    expect(result.success).toBe(false)
   })
 })

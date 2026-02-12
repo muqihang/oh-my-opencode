@@ -2,7 +2,9 @@
 
 ## OVERVIEW
 
-20+ tools: LSP (6), AST-Grep (2), Search (2), Session (4), Agent delegation (4), System (2), Skill (3).
+25+ tools across 14 directories. Two patterns: Direct ToolDefinition (static) and Factory Function (context-dependent).
+
+**Categories**: LSP (6), AST-Grep (2), Search (2), Session (4), Task (4), Agent delegation (1), Background (2), Skill (2), System (2), MCP (1), Command (1)
 
 ## STRUCTURE
 
@@ -13,14 +15,15 @@ tools/
 │   ├── tools.ts      # ToolDefinition or factory
 │   ├── types.ts      # Zod schemas
 │   └── constants.ts  # Fixed values
-├── lsp/              # 6 tools: definition, references, symbols, diagnostics, rename (client.ts 596 lines)
+├── lsp/              # 6 tools: goto_definition, find_references, symbols, diagnostics, prepare_rename, rename
 ├── ast-grep/         # 2 tools: search, replace (25 languages)
-├── delegate-task/    # Category-based routing (1070 lines)
+├── delegate-task/    # Category routing (constants.ts 569 lines, tools.test.ts 3582 lines)
+├── task/             # 4 tools: create, get, list, update (Claude Code compatible)
 ├── session-manager/  # 4 tools: list, read, search, info
-├── grep/             # Custom grep with timeout (60s, 10MB)
+├── grep/             # Custom grep (60s timeout, 10MB limit)
 ├── glob/             # 60s timeout, 100 file limit
 ├── interactive-bash/ # Tmux session management
-├── look-at/          # Multimodal PDF/image
+├── look-at/          # Multimodal PDF/image analysis
 ├── skill/            # Skill execution
 ├── skill-mcp/        # Skill MCP operations
 ├── slashcommand/     # Slash command dispatch
@@ -35,10 +38,21 @@ tools/
 | LSP | lsp_goto_definition, lsp_find_references, lsp_symbols, lsp_diagnostics, lsp_prepare_rename, lsp_rename | Direct |
 | Search | ast_grep_search, ast_grep_replace, grep, glob | Direct |
 | Session | session_list, session_read, session_search, session_info | Direct |
-| Agent | delegate_task, call_omo_agent | Factory |
+| Task | task_create, task_get, task_list, task_update | Factory |
+| Agent | call_omo_agent | Factory |
 | Background | background_output, background_cancel | Factory |
 | System | interactive_bash, look_at | Mixed |
-| Skill | skill, skill_mcp, slashcommand | Factory |
+| Skill | skill, skill_mcp | Factory |
+| Command | slashcommand | Factory |
+
+## TASK TOOLS
+
+Claude Code compatible task management.
+
+- **task_create**: Creates a new task. Auto-generates ID and syncs to Todo.
+- **task_get**: Retrieves a task by ID.
+- **task_list**: Lists active tasks. Filters out completed/deleted by default.
+- **task_update**: Updates task fields. Supports additive `addBlocks`/`addBlockedBy`.
 
 ## HOW TO ADD
 
