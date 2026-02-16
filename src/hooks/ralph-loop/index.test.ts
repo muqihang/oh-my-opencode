@@ -266,7 +266,7 @@ describe("ralph-loop", () => {
 
       // then - warning toast shown
       expect(toastCalls.length).toBe(1)
-      expect(toastCalls[0].title).toBe("Ralph Loop Stopped")
+      expect(toastCalls[0].title).toBe("Ralph Loop 已停止")
       expect(toastCalls[0].variant).toBe("warning")
 
       // then - state should be cleared
